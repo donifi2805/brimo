@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BRImo UI</title>
+
+    <script src="jspdf.min.js"></script>
+    <script src="jspdf.plugin.autotable.min.js"></script>
+
+    <script type="module">
+        // Impor fungsi yang diperlukan
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, doc, onSnapshot, collection, 
+            query, where, getDocs, setLogLevel
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. Konfigurasi Firebase Anda
+        const firebaseConfig = {
+          apiKey: "AIzaSyD2bI8R7u6KZW3gB_Pb0TVmDHkxG3dqu9A",
+          authDomain: "brimoku-e49d0.firebaseapp.com",
+          projectId: "brimoku-e49d0",
+          storageBucket: "brimoku-e49d0.firebasestorage.app",
+          messagingSenderId: "1093618052793",
+          appId: "1:1093618052793:web:d2a804ff78e2f4156bf568",
+          measurementId: "G-PLXZ3YB3KC"
+        };
+        
+        // 2. Gunakan projectId Anda sebagai appId
+        const appId = firebaseConfig.projectId;
+
+        let app, auth, db;
+        let loggedInUserData = null;
+        let loggedInUserDocId = null;
+        
+        // Variabel global untuk menyimpan semua transaksi
+        let allTransactions = [];
+
+        // Fungsi inisialisasi utama yang baru
+        async function initFirebaseAndLogin(username, password) {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                setLogLevel('Debug');
+                console.log("Firebase Inisialisasi... Menunggu Autentikasi Anonim.");
+
+                // 3. Login secara anonim agar aplikasi punya izin baca
+                await signInAnonymously(auth);
+                const anonymousUserId = auth.currentUser.uid;
+                console.log("Autentikasi Anonim Berhasil. (UID: " + anonymousUserId + "). Mencari pengguna...");
+
+                // 4. Cari pengguna di koleksi 'app_users'
+                const appUsersCollectionRef = collection(db, "artifacts", appId, "app_users");
+                const q = query(appUsersCollectionRef, where("login_username", "==", username));
+                
+                const querySnapshot = await getDocs(q);
+
+                if (querySnapshot.empty) {
+                    console.error("Login Gagal: Username tidak ditemukan.");
+                    return { success: false, message: "Username tidak ditemukan!" };
+                }
+
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+
+                // 5. Verifikasi password
+                if (userData.login_password !== password) {
+                    console.error("Login Gagal: Password salah.");
+                    return { success: false, message: "Password salah!" };
+                }
+
+                // 6. Login Berhasil
+                console.log("Login Aplikasi Berhasil untuk:", userData.profile_username);
+                loggedInUserData = userData;
+                loggedInUserDocId = userDoc.id;
+                
+                // Ekstrak data ke window agar bisa diakses skrip PDF
+                window.loggedInUserData = userData;
+
+                // Muat data dan pasang listener
+                loadUserData(loggedInUserData);
+                listenForTransactions(loggedInUserDocId);
+
+                return { success: true };
+
+            } catch (error) {
+                console.error("Error inisialisasi Firebase atau Login:", error);
+                return { success: false, message: "Terjadi error pada Firebase. Cek koneksi Anda." };
+            }
+        }
+        
+        // Memuat data statis pengguna (nama, rekening)
+        function loadUserData(userData) {
+            try {
+                document.getElementById('editable-username').textContent = userData.profile_username;
+                document.getElementById('rekening-username').textContent = userData.profile_username;
+                document.getElementById('mutasi-rekening-number').textContent = userData.rekeningNumber;
+                document.getElementById('rekening-number').textContent = userData.rekeningNumber;
+                
+                console.log("Data pengguna (statis) dimuat ke UI.");
+            } catch (error) {
+                console.error("Error memuat data pengguna ke UI:", error);
+            }
+        }
+
+        // Mendengarkan perubahan data transaksi (real-time)
+        // Fungsi ini sekarang menghitung dan memperbarui saldo
+        function listenForTransactions(userDocId) {
+            if (!db || !userDocId) return;
+            
+            const transCollectionRef = collection(db, "artifacts", appId, "app_users", userDocId, "transactions");
+            
+            onSnapshot(transCollectionRef, (querySnapshot) => {
+                console.log("Snapshot transaksi diterima.");
+                const mutasiList = document.getElementById('mutasi-list');
+                mutasiList.innerHTML = ''; // Kosongkan daftar
+                
+                let transactions = [];
+                querySnapshot.forEach((doc) => {
+                    transactions.push(doc.data());
+                });
+
+                // Urutkan transaksi (jika timestamp ada)
+                transactions.sort((a, b) => {
+                    if (a.timestamp && b.timestamp) {
+                        return b.timestamp.seconds - a.timestamp.seconds;
+                    }
+                    return 0; // Fallback jika tidak ada timestamp
+                });
+                
+                // --- LOGIKA KALKULASI SALDO OTOMATIS ---
+                
+                // 1. Dapatkan Saldo Awal (angka)
+                const saldoAwal = (loggedInUserData && loggedInUserData.saldo_awal) ? loggedInUserData.saldo_awal : 0;
+                let totalTransaksi = 0;
+                
+                // 2. Akumulasi semua transaksi
+                transactions.forEach(tx => {
+                    totalTransaksi += (tx.amount_number || 0); 
+                });
+                
+                // 3. Hitung Saldo Akhir
+                const saldoAkhir = saldoAwal + totalTransaksi;
+                
+                // 4. Format Saldo Akhir ke string "1.234.567"
+                const formattedBalanceString = saldoAkhir.toLocaleString('id-ID');
+
+                // 5. Simpan ke variabel global
+                window.currentCalculatedBalanceString = formattedBalanceString;
+            
+                // 6. Panggil fungsi update view global
+                if (window.updateBalanceView) {
+                    window.updateBalanceView(formattedBalanceString);
+                }
+                // --- AKHIR LOGIKA SALDO ---
+
+                // Simpan ke variabel global untuk e-Statement
+                allTransactions = transactions;
+                window.allTransactions = transactions; 
+
+                // Kelompokkan berdasarkan tanggal (Render List)
+                const groupedByDate = transactions.reduce((acc, tx) => {
+                    const date = tx.date;
+                    if (!acc[date]) {
+                        acc[date] = [];
+                    }
+                    acc[date].push(tx);
+                    return acc;
+                }, {});
+
+                // Render ke HTML
+                for (const date in groupedByDate) {
+                    const dateHeader = document.createElement('div');
+                    dateHeader.className = 'mutasi-date-header';
+                    dateHeader.textContent = date;
+                    mutasiList.appendChild(dateHeader);
+
+                    groupedByDate[date].forEach(tx => {
+                        const item = document.createElement('div');
+                        item.className = 'mutasi-item';
+                        
+                        let amountColor = '#333'; // default
+                        if (tx.amount && tx.amount.startsWith('+')) amountColor = 'green';
+                        if (tx.amount && tx.amount.startsWith('-')) amountColor = '#d90429';
+
+                        item.innerHTML = `
+                            <div class="mutasi-item-details">
+                                <div class="desc">${tx.desc}</div>
+                                <div class="via">${tx.via}</div>
+                            </div>
+                            <div class="mutasi-item-amount">
+                                <div class="amount" style="color: ${amountColor};">${tx.amount}</div>
+                                <div class="time">${tx.time}</div>
+                            </div>
+                        `;
+                        mutasiList.appendChild(item);
+                    });
+                }
+            }, (error) => {
+                console.error("Error mendengarkan snapshot transaksi:", error);
+            });
+        }
+        
+        // Menjadikan fungsi init global agar bisa dipanggil dari HTML
+        window.initFirebaseAndLogin = initFirebaseAndLogin;
+
+    </script>
+    
+    <style>
+        /* CSS TIDAK BERUBAH DARI SEBELUMNYA */
+        /* ... (SEMUA CSS ANDA DARI SEBELUMNYA ADA DI SINI) ... */
+        
+        /* Mengatur dasar halaman */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #333;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        /* --- CSS Layar Loading (Tidak berubah) --- */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2002; 
+            background-color: #ffffff;
+            background-image: url('loading.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* --- CSS Halaman Sambutan (Tidak berubah) --- */
+        #welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2000; 
+            background-color: #ffffff; 
+            background-size: contain;
+            background-position: center top;
+            background-repeat: no-repeat;
+            transition: background-image 2s ease-in-out;
+            cursor: pointer; 
+            -webkit-tap-highlight-color: transparent;
+            display: none;
+        }
+
+        #welcome-button {
+            position: absolute;
+            bottom: 20px;
+            right: 55px;
+            padding: 6px 12px; 
+            border-radius: 0px; 
+            font-size: 0.75rem; 
+            background-color: #ffffff; 
+            color: #016EC3; 
+            border: none;
+            font-weight: 600; 
+            cursor: pointer;
+            box-shadow: none; 
+            transition: background-color 0.2s;
+            z-index: 2001; 
+        }
+        #welcome-button:hover {
+            background-color: #f0f0f0; 
+        }
+
+        /* --- CSS Layar Login (Tidak berubah) --- */
+        #login-screen {
+            width: 390px;
+            height: 844px;
+            position: relative;
+            overflow: hidden; 
+            background-image: url('login.jpg');
+            background-size: 100% auto;
+            background-position: top center;
+            background-repeat: no-repeat;
+            background-color: #ffffff;
+            display: none; /* Ditampilkan oleh welcome button */
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .login-form-container {
+            padding: 24px;
+            position: relative;
+            z-index: 2;
+            top: 50px; 
+        }
+        
+        .input-group {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            position: relative;
+            left: 10px; 
+            background-color: transparent; 
+            border-radius: 8px;
+            box-shadow: none; 
+        }
+        
+        #username-group {
+            margin-bottom: 5px; 
+            bottom: 10px;
+        }
+
+        #password-group {
+            bottom: 5px;
+        }
+
+        .input-group input {
+            border: none;
+            outline: none;
+            font-size: 1.3rem; 
+            flex: 1;
+            color: #333;
+            -webkit-appearance: none;
+            background-color: transparent;
+        }
+        
+        .input-group input::placeholder {
+            color: #aaa;
+        }
+        
+        .eye-icon {
+            cursor: pointer;
+            fill: #aaa;
+            position: relative; 
+            right: 50px; 
+        }
+        
+        #eye-icon-closed {
+            display: none;
+        }
+        
+        #login-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: #016EC3; 
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+            position: relative;
+            top: 18px; 
+        }
+        #login-button:hover {
+            background-color: #0161AC; 
+        }
+        #login-button:disabled {
+            background-color: #ccc;
+            cursor: wait;
+        }
+        /* --- AKHIR CSS Layar Login --- */
+
+
+        /* Kontainer utama aplikasi */
+        .app-container {
+            width: 390px;
+            height: 844px;
+            position: relative;
+            overflow: hidden; 
+            border: 1px solid #ccc;
+            background-color: #f0f2f5; 
+            display: none; /* Ditampilkan setelah login berhasil */
+        }
+
+        /* --- Kontainer untuk Layar Beranda --- */
+        #home-screen {
+            width: 100%;
+            height: 100%;
+            background-image: url('baground.jpg');
+            background-size: contain; 
+            background-position: top; 
+            background-repeat: no-repeat; 
+        }
+
+        /* Konten kustom kita (Username dan Saldo) */
+        .custom-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            color: white;
+            padding: 20px;
+            padding-top: 45px;
+            box-sizing: border-box;
+            z-index: 10; 
+        }
+
+        .top-bar { display: flex; align-items: center; height: 30px; margin-top: -25.5px; margin-left: 38.2px; }
+        
+        /* Mengubah input menjadi span */
+        #editable-username { 
+            background: transparent; 
+            border: none; 
+            color: white; 
+            font-size: 0.8085rem; 
+            font-weight: 700; 
+            font-family: Arial, Helvetica, sans-serif; 
+            padding: 0; 
+            margin: 0; 
+            width: 200px;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .balance-section { margin-top: 25px; }
+        .balance-label { font-size: 0.9rem; opacity: 0.8; height: 1.2em; }
+        .balance-display { display: flex; align-items: center; gap: 3px; margin-top: 5px; }
+        .balance-currency { font-size: 1.2285rem; font-weight: 600; margin-top: 2px; margin-left: 9px; }
+        .balance-amount { font-size: 1.203345rem; font-weight: 700; letter-spacing: 1px; margin-top: 2px; }
+        #toggle-balance { width: 24.84px; height: 24.84px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        #toggle-balance img { max-width: 100%; max-height: 100%; display: block; }
+
+
+        /* --- CSS untuk Layar Mutasi --- */
+        #mutasi-screen {
+            width: 100%;
+            height: 100%;
+            display: none; 
+            flex-direction: column;
+            background-color: #f0f2f5; 
+            box-sizing: border-box;
+        }
+
+        .mutasi-header {
+            background-color: #016EC3; 
+            padding: 45px 20px 20px 20px;
+            text-align: center;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .mutasi-tabs-container {
+            background-color: #016EC3; 
+            padding: 0 15px 15px 15px; 
+        }
+        
+        .mutasi-tabs {
+            display: flex;
+            background-color: #0161AC; 
+            border-radius: 25px; 
+            padding: 4px; 
+            position: relative;
+        }
+        
+        .mutasi-tab {
+            flex: 1; 
+            padding: 10px 15px;
+            text-align: center;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: 20px; 
+            cursor: pointer;
+            color: white; 
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+        
+        .mutasi-tab.active {
+            background-color: white; 
+            color: #016EC3; 
+            font-weight: 700;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        /* --- Filter Area --- */
+        .mutasi-filters {
+            display: flex;
+            padding: 15px;
+            gap: 10px;
+            background-color: white; 
+            border-bottom: 1px solid #eee;
+        }
+        
+        .filter-dropdown {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            background-image: none;
+            cursor: default; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+        }
+        .filter-label {
+            font-size: 0.8rem;
+            color: #555;
+        }
+        .filter-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #016EC3; 
+            margin-top: 2px;
+        }
+
+        .filter-button {
+            padding: 10px 15px;
+            background-color: #016EC3; 
+            color: #ffffff; 
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Daftar Mutasi */
+        .mutasi-list { 
+            flex: 1; 
+            overflow-y: auto; 
+        }
+        .mutasi-date-header { padding: 15px 15px 10px 15px; font-size: 0.9rem; font-weight: 600; color: #555; }
+        .mutasi-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background-color: white; border-bottom: 1px solid #f0f0f0; }
+        .mutasi-item-details .desc { font-size: 0.95rem; font-weight: 500; color: #333; }
+        .mutasi-item-details .via { font-size: 0.85rem; color: #777; margin-top: 2px; }
+        .mutasi-item-amount { flex-shrink: 0; margin-left: 10px; }
+        .mutasi-item-amount .amount { font-size: 0.95rem; font-weight: 700; /* Warna diatur inline oleh JS */ text-align: right; }
+        .mutasi-item-amount .time { font-size: 0.8rem; color: #777; margin-top: 2px; text-align: right; }
+
+        
+        /* --- CSS BARU UNTUK e-Statement --- */
+        
+        #mutasi-content-container {
+            flex: 1;
+            overflow-y: auto; 
+            background-color: #f0f2f5;
+            position: relative; 
+        }
+        
+        #mutasi-transaksi-content {
+            display: flex; 
+            flex-direction: column;
+            height: 100%; 
+            background-color: #f0f2f5;
+        }
+
+        #estatement-content {
+            display: none; 
+            flex-direction: column;
+            box-sizing: border-box;
+            padding: 20px;
+            background-color: #ffffff;
+            overflow-y: auto; 
+        }
+        
+        .estatement-section {
+            margin-bottom: 24px;
+        }
+        
+        .estatement-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .estatement-dropdown-box {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .rekening-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #016EC3;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            margin-right: 12px;
+        }
+        
+        .rekening-details {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        
+        .rekening-number {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .rekening-username {
+            font-size: 0.75rem; 
+            color: #555;
+        }
+
+        .dropdown-arrow-icon {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708 .708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        
+        .estatement-radio-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .estatement-radio-group label {
+            font-size: 0.95rem;
+            color: #333;
+            margin-left: 8px;
+            cursor: pointer;
+        }
+        
+        .estatement-radio-group input[type="radio"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background-color: #fff;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #777;
+            border-radius: 50%;
+            cursor: pointer;
+            outline: none;
+        }
+        
+        .estatement-radio-group input[type="radio"]:checked {
+            background-color: #016EC3;
+            border-color: #016EC3;
+        }
+        
+        #tipe-dokumen-box {
+            justify-content: space-between;
+        }
+        
+        #tipe-dokumen-box span {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .estatement-date-filter-group {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .estatement-select {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #333;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23555' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708 .708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+
+        #buat-estatement-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: #016EC3;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px; 
+            transition: background-color 0.2s;
+        }
+
+        #buat-estatement-btn:hover {
+            background-color: #0161AC;
+        }
+        /* Style disabled untuk tombol e-statement */
+        #buat-estatement-btn:disabled {
+            background-color: #ccc;
+            cursor: wait;
+        }
+        
+        /* --- AKHIR CSS e-Statement --- */
+        
+        .app-container.mutasi-view #home-screen { display: none; }
+        .app-container.mutasi-view #mutasi-screen { display: flex; }
+
+        
+        #floating-widget-button { 
+            position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%); 
+            width: 385px; height: 154px; 
+            justify-content: center; align-items: center; 
+            z-index: 1001; user-select: none; cursor: pointer; 
+            -webkit-tap-highlight-color: transparent; 
+            display: none; 
+        }
+        #floating-widget-button img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+        
+        .time-range-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5); 
+            z-index: 1010; display: none; justify-content: center;
+            align-items: flex-end; opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .time-range-modal-overlay.show { display: flex; opacity: 1; }
+        .time-range-modal-content {
+            background-color: #f0f2f5; 
+            width: 100%; max-width: 390px; box-sizing: border-box;
+            padding: 10px; transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        .time-range-modal-overlay.show .time-range-modal-content { transform: translateY(0); }
+        .time-range-option, .time-range-cancel {
+            background-color: white; text-align: center; padding: 14px;
+            font-size: 1rem; color: #016EC3; cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .time-range-option:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+        .time-range-option:last-of-type { border-bottom: none; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+        .time-range-cancel {
+            background-color: white; color: #d90429; margin-top: 8px;
+            border-radius: 12px; font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading-screen"></div>
+
+    <div id="welcome-screen">
+        <button id="welcome-button">Masuk</button>
+    </div>
+
+    <div id="login-screen">
+        <div class="login-form-container">
+            
+            <div class="input-group" id="username-group">
+                <input type="text" id="login-username" placeholder="Username" value="donitata1717">
+            </div>
+            <div class="input-group" id="password-group">
+                <input type="password" id="login-password" placeholder="Password" value="wasalamL050">
+                
+                <span id="toggle-password" class="eye-icon">
+                    <svg id="eye-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <svg id="eye-icon-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94C16.236 19.162 14.176 19.88 12 19.88C5.01 19.88 1 12 1 12C2.28 9.33 4.14 7.1 6.36 5.61M21.64 14.39C22.46 13.31 23 12 23 12C23 12 18.99 4.12 12 4.12C10.83 4.12 9.72 4.3 8.67 4.63M12 9C10.3431 9 9 10.3431 9 12C9 12.331 9.06245 12.648 9.17641 12.942M15 12C15 13.6569 13.6569 15 12 15C11.562 15 11.144 14.919 10.758 14.774" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 1L23 23" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+            </div>
+            
+            <button id="login-button">Login</button>
+        </div>
+    </div>
+
+
+    <div class="app-container">
+        
+        <div id="home-screen">
+            <div class="custom-content">
+                <div class="top-bar">
+                    <span id="editable-username">Memuat...</span>
+                </div>
+                <div class="balance-section">
+                    <div class="balance-label"></div> <div class="balance-display">
+                        <span class="balance-currency">Rp</span>
+                        <span class="balance-amount" id="balance-amount">••••••</span> <span id="toggle-balance"></span> 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="mutasi-screen">
+            <div class="mutasi-header">Mutasi</div>
+            
+            <div class="mutasi-tabs-container">
+                <div class="mutasi-tabs">
+                    <span id="tab-mutasi" class="mutasi-tab active">Mutasi Transaksi</span>
+                    <span id="tab-estatement" class="mutasi-tab">e-Statement</span>
+                </div>
+            </div>
+            
+            <div id="mutasi-content-container">
+                
+                <div id="mutasi-transaksi-content" style="display: flex; flex-direction: column; height: 100%;">
+                    <div class="mutasi-filters">
+                        <div class="filter-dropdown">
+                            <span class="filter-label">Sumber Rekening</span>
+                            <span class="filter-value" id="mutasi-rekening-number">Memuat...</span>
+                        </div>
+                        <button class="filter-button" id="rentang-waktu-btn">7 Hari Terakhir</button>
+                    </div>
+                    
+                    <div class="mutasi-list" id="mutasi-list">
+                        </div>
+                </div>
+
+                <div id="estatement-content" style="display: none;">
+                    
+                    <div>
+                        <div class="estatement-section">
+                            <label class="estatement-label">Pilih Rekening</label>
+                            <div class="estatement-dropdown-box" id="rekening-box">
+                                <div class="rekening-icon">RR</div>
+                                <div class="rekening-details">
+                                    <div class="rekening-number" id="rekening-number">Memuat...</div>
+                                    <div class="rekening-username" id="rekening-username">Memuat...</div>
+                                </div>
+                                <div class="dropdown-arrow-icon"></div>
+                            </div>
+                        </div>
+
+                        <div class="estatement-section">
+                            <label class="estatement-label">Rentang Waktu</label>
+                            <div class="estatement-radio-group">
+                                <input type="radio" id="radio-bulanan" name="rentang_waktu" value="bulanan" checked>
+                                <label for="radio-bulanan">Pilih Bulan</label>
+                                
+                                <input type="radio" id="radio-semua" name="rentang_waktu" value="semua" style="margin-left: 20px;">
+                                <label for="radio-semua">Semua</label>
+                            </div>
+                            
+                            <div class="estatement-date-filter-group">
+                                <select id="select-bulan" class="estatement-select"></select>
+                                <select id="select-tahun" class="estatement-select"></select>
+                            </div>
+                        </div>
+                        
+                        <div class="estatement-section">
+                            <label class="estatement-label">Tipe Dokumen</label>
+                            <div class="estatement-dropdown-box" id="tipe-dokumen-box">
+                                <span>PDF</span>
+                                <div class="dropdown-arrow-icon"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="buat-estatement-btn">Buat e-Statement</button>
+                    
+                </div>
+
+            </div>
+            
+        </div>
+        
+    </div>
+
+    <div id="floating-widget-button">
+        <img id="floating-image" src="home.png" alt="Nav Button">
+    </div>
+
+    <div id="time-range-overlay" class="time-range-modal-overlay">
+        <div id="time-range-modal" class="time-range-modal-content">
+            <div class="time-range-option" data-value="today">Hari ini</div>
+            <div class="time-range-option" data-value="7days">7 hari terakhir</div>
+            <div class="time-range-option" data-value="1month">1 bulan terakhir</div>
+            <div class="time-range-cancel" id="time-range-cancel">Batal</div>
+        </div>
+    </div>
+
+
+    <script>
+        // --- VARIABEL GLOBAL UNTUK SALDO ---
+        window.currentCalculatedBalanceString = "0"; 
+        
+        // --- FUNGSI HELPER UNTUK e-Statement (Tidak Berubah) ---
+        
+        const tellerPool = [ '8881234', '8885678', '8889012', '8884321', '8888888', '8882222', '8883333' ];
+        function getTellerId() {
+            return tellerPool[Math.floor(Math.random() * tellerPool.length)];
+        }
+        
+        const monthMap = {
+            "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "Mei": "05", "Jun": "06",
+            "Jul": "07", "Ags": "08", "Sep": "09", "Okt": "10", "Nov": "11", "Des": "12"
+        };
+        
+        function parseTxDate(dateStr) {
+            try {
+                const parts = dateStr.split(" "); 
+                if (parts.length !== 3) return null;
+                const day = parseInt(parts[0], 10);
+                let monthKey = parts[1];
+                if (monthKey) {
+                    monthKey = monthKey.charAt(0).toUpperCase() + monthKey.slice(1).toLowerCase();
+                    monthKey = monthKey.substring(0, 3); 
+                }
+                let monthIndex = Object.keys(monthMap).findIndex(m => m === monthKey);
+                if (monthKey === "Mei" && monthIndex === -1) monthIndex = 4; 
+                if (monthKey === "Ags" && monthIndex === -1) monthIndex = 7;
+                if (monthIndex === -1) return null;
+                const year = parseInt(parts[2], 10);
+                if (isNaN(day) || isNaN(year)) return null;
+                return new Date(year, monthIndex, day);
+            } catch (e) {
+                console.error("Gagal parse tanggal:", dateStr, e);
+                return null;
+            }
+        }
+        
+        function parseAmountString(amountStr) {
+            if (!amountStr) return 0;
+            const sign = amountStr.includes('-') ? -1 : 1;
+            let numStr = String(amountStr);
+            if(numStr.includes(',')) {
+                 const parts = numStr.split(',');
+                 if(parts.length > 1) {
+                    numStr = parts[0]; 
+                 }
+            }
+            numStr = numStr.replace(/[^0-9]/g, "");
+            if (numStr === "") return 0;
+            const finalNum = parseInt(numStr, 10) * sign;
+            return finalNum;
+        }
+
+        function formatPdfCurrency(number) {
+            return number.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
+        function formatPdfTimestamp(dateStr, timeStr) {
+            try {
+                const dateParts = dateStr.split(" ");
+                const day = String(dateParts[0]).padStart(2, '0');
+                let monthKey = dateParts[1];
+                if (monthKey) {
+                    monthKey = monthKey.charAt(0).toUpperCase() + monthKey.slice(1).toLowerCase();
+                    monthKey = monthKey.substring(0, 3);
+                }
+                const month = monthMap[monthKey] || "00"; 
+                const year = dateParts[2].substring(2); 
+                const time = timeStr.split(" ")[0];
+                return `${day}/${month}/${year} ${time}`;
+            } catch(e) {
+                return `${dateStr} ${timeStr}`;
+            }
+        }
+        
+        // --- [BARU] FUNGSI HELPER TERBILANG (BAHASA INDONESIA) ---
+        function terbilang(angka) {
+            const bil = ["", "SATU", "DUA", "TIGA", "EMPAT", "LIMA", "ENAM", "TUJUH", "DELAPAN", "SEMBILAN", "SEPULUH", "SEBELAS"];
+            
+            function getTerbilang(n) {
+                if (n < 12) {
+                    return bil[n];
+                } else if (n < 20) {
+                    return bil[n - 10] + " BELAS";
+                } else if (n < 100) {
+                    return bil[Math.floor(n / 10)] + " PULUH" + (n % 10 > 0 ? " " + bil[n % 10] : "");
+                } else if (n < 200) {
+                    return "SERATUS" + (n % 100 > 0 ? " " + getTerbilang(n % 100) : "");
+                } else if (n < 1000) {
+                    return bil[Math.floor(n / 100)] + " RATUS" + (n % 100 > 0 ? " " + getTerbilang(n % 100) : "");
+                } else if (n < 2000) {
+                    return "SERIBU" + (n % 1000 > 0 ? " " + getTerbilang(n % 1000) : "");
+                } else if (n < 1000000) {
+                    return getTerbilang(Math.floor(n / 1000)) + " RIBU" + (n % 1000 > 0 ? " " + getTerbilang(n % 1000) : "");
+                } else if (n < 1000000000) {
+                    return getTerbilang(Math.floor(n / 1000000)) + " JUTA" + (n % 1000000 > 0 ? " " + getTerbilang(n % 1000000) : "");
+                } else if (n < 1000000000000) {
+                    return getTerbilang(Math.floor(n / 1000000000)) + " MILIAR" + (n % 1000000000 > 0 ? " " + getTerbilang(n % 1000000000) : "");
+                } else if (n < 1000000000000000) {
+                    return getTerbilang(Math.floor(n / 1000000000000)) + " TRILIUN" + (n % 1000000000000 > 0 ? " " + getTerbilang(n % 1000000000000) : "");
+                }
+            }
+            
+            // Ambil bagian bulat saja (abaikan koma)
+            const angkaBulat = Math.floor(Math.abs(angka));
+            let hasil = getTerbilang(angkaBulat).replace(/\s+/g, ' ').trim(); // Rapikan spasi
+            if (angka < 0) {
+                hasil = "MINUS " + hasil;
+            }
+            return hasil === "" ? "NOL" : hasil;
+        }
+
+        // --- [BARU] FUNGSI HELPER TERBILANG (BAHASA INGGRIS) ---
+        function inWords(num) {
+            const a = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
+            const b = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
+            const g = ['', 'THOUSAND', 'MILLION', 'BILLION', 'TRILLION'];
+
+            function numberToWords(n) {
+                if (n < 20) return a[n];
+                let str = '';
+                if (n >= 100) {
+                    str += a[Math.floor(n / 100)] + ' HUNDRED' + (n % 100 > 0 ? ' ' : '');
+                    n %= 100;
+                }
+                if (n >= 20) {
+                    str += b[Math.floor(n / 10)] + (n % 10 > 0 ? ' ' : '');
+                    n %= 10;
+                }
+                if (n > 0) {
+                    str += a[n];
+                }
+                return str;
+            }
+            
+            // Ambil bagian bulat saja (abaikan koma)
+            let numAbs = Math.floor(Math.abs(num));
+            if (numAbs === 0) return 'ZERO';
+
+            let str = '';
+            let i = 0;
+            while (numAbs > 0) {
+                let chunk = numAbs % 1000;
+                if (chunk > 0) {
+                    str = numberToWords(chunk) + (g[i] ? ' ' + g[i] : '') + (str ? ' ' + str : '');
+                }
+                numAbs = Math.floor(numAbs / 1000);
+                i++;
+            }
+            
+            if (num < 0) {
+                str = "NEGATIVE " + str;
+            }
+            
+            return str.replace(/\s+/g, ' ').trim(); // Rapikan spasi
+        }
+
+        
+        // ===================================================================
+        // === FUNGSI generateEStatement (TELAH DIMODIFIKASI) ===
+        // ===================================================================
+        
+        /**
+         * Fungsi utama untuk membuat PDF e-Statement
+         * *** LOGIKA DIPERBARUI UNTUK MENAMBAHKAN HALAMAN SUMMARY ***
+         */
+        async function generateEStatement() {
+            const estatementBtn = document.getElementById('buat-estatement-btn');
+            estatementBtn.disabled = true;
+            estatementBtn.textContent = 'Membuat...';
+
+            try {
+                // 1. Periksa library
+                if (!window.jspdf || !window.jspdf.jsPDF) {
+                    alert("Kesalahan: Library jsPDF (jspdf.min.js) tidak dapat dimuat.");
+                    estatementBtn.disabled = false;
+                    estatementBtn.textContent = 'Buat e-Statement';
+                    return;
+                }
+                const doc = new window.jspdf.jsPDF('p', 'pt', 'a4');
+                if (typeof doc.autoTable !== 'function') {
+                    alert("Kesalahan: Library Tabel PDF (jspdf.plugin.autotable.min.js) tidak dapat dimuat.");
+                    estatementBtn.disabled = false;
+                    estatementBtn.textContent = 'Buat e-Statement';
+                    return;
+                }
+                
+                // --- Helper style functions ---
+                function setSubTextStyle(doc) {
+                    doc.setFont('helvetica', 'italic');
+                    doc.setFontSize(8);
+                    doc.setTextColor(128, 128, 128); // Grey
+                    doc.setGState(new doc.GState({ opacity: 0.8 })); 
+                }
+                function setMainTextStyle(doc, isBold = false) {
+                    doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+                    doc.setFontSize(9);
+                    doc.setTextColor(0, 0, 0); // Black
+                    doc.setGState(new doc.GState({ opacity: 1 })); 
+                }
+                
+                // --- FUNGSI HELPER UNTUK WATERMARK ---
+                function addWatermark(doc) {
+                    const totalPages = doc.internal.getNumberOfPages();
+                    for (let i = 1; i <= totalPages; i++) {
+                        doc.setPage(i); 
+                        doc.saveGraphicsState();
+                        doc.setGState(new doc.GState({ opacity: 0.08 })); 
+                        doc.setTextColor(1, 110, 195); 
+                        doc.setFont('helvetica', 'bold');
+                        doc.setFontSize(100); 
+                        
+                        const pageWidth = doc.internal.pageSize.width;
+                        const pageHeight = doc.internal.pageSize.height;
+                        for (let y = 0; y < pageHeight; y += 150) {
+                            for (let x = 0; x < pageWidth; x += 250) {
+                                doc.text("BRI", x, y, { angle: -45 }); 
+                            }
+                        }
+                        doc.restoreGraphicsState();
+                    }
+                }
+                
+                // 2. Ambil data global
+                if (!window.loggedInUserData || !window.allTransactions) {
+                    alert("Data pengguna atau transaksi belum siap. Tunggu sebentar lalu coba lagi.");
+                    return;
+                }
+                const userData = window.loggedInUserData;
+                const allTxs = window.allTransactions; 
+
+                // 3. Ambil filter
+                const selectedMonth = parseInt(document.getElementById('select-bulan').value, 10); 
+                const selectedYear = parseInt(document.getElementById('select-tahun').value, 10); 
+                const isSemua = document.getElementById('radio-semua').checked;
+                
+                // 4. Kalkulasi Saldo
+                const saldoAwal = userData.saldo_awal || 0;
+                let totalTransaksi = 0;
+                allTxs.forEach(tx => {
+                    const amountNum = tx.amount_number !== undefined ? tx.amount_number : parseAmountString(tx.amount);
+                    totalTransaksi += (amountNum || 0);
+                });
+                const saldoAkhir = saldoAwal + totalTransaksi;
+                
+                // 5. Proses Transaksi dan Hitung Saldo Berjalan (Mundur)
+                let currentBalance = saldoAkhir;
+                const processedTxs = [];
+                for (const tx of allTxs) {
+                    const txDate = parseTxDate(tx.date);
+                    if (!txDate) { console.warn("Melewati tx, tanggal tdk valid:", tx.date); continue; }
+                    
+                    const txAmount = tx.amount_number !== undefined ? tx.amount_number : parseAmountString(tx.amount);
+                    if (isNaN(txAmount)) { console.warn("Melewati tx, jumlah tdk valid:", tx.amount); continue; }
+                    
+                    const txData = { ...tx, txDate, txAmount };
+                    txData.balanceAfter = currentBalance; 
+                    currentBalance = currentBalance - txAmount; 
+                    txData.balanceBefore = currentBalance;
+                    processedTxs.push(txData);
+                }
+                const grandOpeningBalance = currentBalance;
+
+                // 6. Filter transaksi sesuai periode
+                let txsForPeriod;
+                let periodeStr;
+                let monthOpeningBalance;
+                
+                if (isSemua) {
+                    txsForPeriod = processedTxs;
+                    periodeStr = "Semua Transaksi";
+                    monthOpeningBalance = grandOpeningBalance;
+                } else {
+                    txsForPeriod = processedTxs.filter(tx => 
+                        tx.txDate.getMonth() === selectedMonth &&
+                        tx.txDate.getFullYear() === selectedYear
+                    );
+                    
+                    if (txsForPeriod.length > 0) {
+                        monthOpeningBalance = txsForPeriod[txsForPeriod.length - 1].balanceBefore;
+                    } else {
+                        const lastTxBeforeMonth = processedTxs.find(tx => tx.txDate < new Date(selectedYear, selectedMonth, 1));
+                        monthOpeningBalance = lastTxBeforeMonth ? lastTxBeforeMonth.balanceAfter : grandOpeningBalance;
+                    }
+                    const tglAwal = `01/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
+                    const tglAkhir = `${new Date(selectedYear, selectedMonth + 1, 0).getDate()}/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
+                    periodeStr = `${tglAwal} - ${tglAkhir}`;
+                }
+
+                // 7. Ubah jadi data tabel (Urutkan: Terlama -> Terbaru)
+                let runningBalance = monthOpeningBalance;
+                const tableData = txsForPeriod.reverse().map(tx => {
+                    const debet = tx.txAmount > 0 ? formatPdfCurrency(tx.txAmount) : '0,00';
+                    const kredit = tx.txAmount < 0 ? formatPdfCurrency(Math.abs(tx.txAmount)) : '0,00';
+                    runningBalance += tx.txAmount; 
+                    const saldo = formatPdfCurrency(runningBalance);
+
+                    return [
+                        formatPdfTimestamp(tx.date, tx.time),
+                        tx.desc,
+                        getTellerId(),
+                        debet,
+                        kredit,
+                        saldo
+                    ];
+                });
+
+                // 8. Buat PDF (Header Info)
+            
+                // --- Logo, Judul Kanan ---
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(18);
+                doc.setTextColor(1, 110, 195);
+                doc.text("BRI", 40, 50);
+                doc.setTextColor(0, 0, 0); 
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(8);
+                doc.text("Melayani Dengan Setulus Hati", 40, 62);
+                doc.setFontSize(10);
+                doc.setFont('helvetica', 'bold');
+                doc.text("LAPORAN TRANSAKSI FINANSIAL", 380, 40);
+                doc.setFont('helvetica', 'italic');
+                doc.text("STATEMENT OF FINANCIAL TRANSACTION", 380, 52);
+                
+                // --- Info Kiri (Dengan Gaya Baru) ---
+                setMainTextStyle(doc);
+                doc.text("Yth : / To :", 40, 100);
+                doc.setFont('helvetica', 'bold'); 
+                doc.setFontSize(9);
+                doc.text(userData.profile_username.toUpperCase(), 40, 125);
+                setMainTextStyle(doc); 
+                doc.text("URANGAGUNG RT 008/003", 40, 137);
+                doc.text("SIDOARJO, SIDOARJO", 40, 149);
+                setMainTextStyle(doc);
+                doc.text("No. Rekening", 40, 175);
+                setSubTextStyle(doc);
+                doc.text("Account No.", 40, 184); 
+                setMainTextStyle(doc);
+                doc.text(`: ${userData.rekeningNumber}`, 110, 179); 
+                setMainTextStyle(doc);
+                doc.text("Nama Produk", 40, 200);
+                setSubTextStyle(doc);
+                doc.text("Product Name", 40, 209); 
+                setMainTextStyle(doc);
+                doc.text(": Britama-IDR", 110, 204); 
+                setMainTextStyle(doc);
+                doc.text("Valuta", 40, 225);
+                setSubTextStyle(doc);
+                doc.text("Currency", 40, 234); 
+                setMainTextStyle(doc);
+                doc.text(": IDR", 110, 229); 
+
+                // --- Info Kanan (Dengan Gaya Baru) ---
+                const tglLaporan = new Date().toLocaleDateString('en-GB'); 
+                setMainTextStyle(doc);
+                doc.text("Tanggal Laporan", 380, 100);
+                setSubTextStyle(doc);
+                doc.text("Statement Date", 380, 109); 
+                setMainTextStyle(doc);
+                doc.text(`: ${tglLaporan}`, 470, 104); 
+                setMainTextStyle(doc);
+                doc.text("Periode Transaksi", 380, 125);
+                setSubTextStyle(doc);
+                doc.text("Transaction Period", 380, 134); 
+                setMainTextStyle(doc);
+                doc.text(`: ${periodeStr}`, 470, 129); 
+                setMainTextStyle(doc);
+                doc.text("Unit Kerja", 380, 150);
+                setSubTextStyle(doc);
+                doc.text("Business Unit", 380, 159); 
+                setMainTextStyle(doc);
+                doc.text(": Unit Silwan Indah", 470, 154); 
+                setMainTextStyle(doc);
+                doc.text("Alamat Unit Kerja", 380, 175);
+                setSubTextStyle(doc);
+                doc.text("Business Unit Address", 380, 184); 
+                setMainTextStyle(doc);
+                doc.text(": J. Kutisari Selatan No. 123A", 470, 179); 
+                doc.text("  Tenggilis Mejoyo Surabaya", 470, 189); 
+                setMainTextStyle(doc);
+
+                // --- Garis pemisah (sesuai screenshot) ---
+                doc.setLineDashPattern([1, 1], 0); 
+                doc.setDrawColor(180, 180, 180); 
+                doc.setLineWidth(0.5);
+                const margin = 40; 
+                const pageWidth = doc.internal.pageSize.width;
+                const lineY1 = 250;
+                doc.line(margin, lineY1, pageWidth - margin, lineY1); // Garis 1
+                const lineY2 = 253;
+                doc.line(margin, lineY2, pageWidth - margin, lineY2); // Garis 2
+                doc.setLineDashPattern([], 0);
+                doc.setDrawColor(0, 0, 0); 
+                
+
+                // 9. Buat Tabel Transaksi (Tabel Utama)
+                doc.autoTable({
+                    startY: 270, 
+                    head: [[
+                        'Tanggal Transaksi\nTransaction Date', 
+                        'Uraian Transaksi\nTransaction Description', 
+                        'Teller\nUser ID', 
+                        'Debet\nDebit', 
+                        'Kredit\nCredit', 
+                        'Saldo\nBalance'
+                    ]],
+                    headStyles: {
+                        fillColor: [1, 110, 195], 
+                        textColor: [255, 255, 255], 
+                        fontSize: 8,
+                        fontStyle: 'bold', 
+                        halign: 'center',
+                        valign: 'middle', 
+                        lineColor: [1, 110, 195], 
+                        lineWidth: 0.5
+                    },
+                    body: tableData, 
+                    bodyStyles: {
+                        fontSize: 7,
+                        lineColor: [221, 221, 221], 
+                        lineWidth: 0.5
+                    },
+                    alternateRowStyles: {
+                        fillColor: [248, 249, 250] 
+                    },
+                    columnStyles: {
+                        0: { halign: 'center' }, 
+                        1: { halign: 'left' }, 
+                        2: { halign: 'center' }, 
+                        3: { halign: 'right' }, 
+                        4: { halign: 'right' }, 
+                        5: { halign: 'right' }  
+                    },
+                    didDrawPage: (data) => {
+                        // Hook ini menangani header/footer di SETIAP halaman (termasuk yg baru)
+                        doc.setFontSize(8);
+                        doc.setFont('helvetica', 'normal');
+                        setMainTextStyle(doc); 
+                        
+                        // Footer (Timestamp) - Kanan Bawah
+                        const tglCetak = new Date().toLocaleString('en-GB', { hour12: false });
+                        doc.text(
+                            tglCetak, 
+                            doc.internal.pageSize.width - data.settings.margin.right, 
+                            doc.internal.pageSize.height - 20, 
+                            { align: 'right' }
+                        );
+                        
+                        // Header (Page Number) - Kanan Atas
+                        let pageStr = "Halaman " + doc.internal.getNumberOfPages();
+                        if (typeof doc.putTotalPages === 'function') {
+                            pageStr = pageStr + " dari " + "{totalPages}"; 
+                        }
+                        doc.text(
+                            pageStr, 
+                            doc.internal.pageSize.width - data.settings.margin.right, 
+                            70, 
+                            { align: 'right' }
+                        );
+                    }
+                });
+
+                // --- [BARU] 10. Tambahkan Bagian Summary di Akhir ---
+                
+                // Dapatkan Y-posisi setelah tabel transaksi selesai
+                let finalY_table = doc.autoTable.previous.finalY;
+
+                // Hitung total debet/kredit untuk periode yang difilter
+                let totalDebet = 0;
+                let totalKredit = 0;
+                // txsForPeriod sudah di-reverse (oldest to newest)
+                txsForPeriod.forEach(tx => { 
+                    if (tx.txAmount > 0) totalDebet += tx.txAmount;
+                    if (tx.txAmount < 0) totalKredit += Math.abs(tx.txAmount);
+                });
+                // Hitung Saldo Akhir periode
+                const calculatedSaldoAkhir = monthOpeningBalance + totalDebet - totalKredit;
+
+                // Siapkan data untuk tabel summary
+                const summaryHead = [['Saldo Awal', 'Total Transaksi Debet', 'Total Transaksi Kredit', 'Saldo Akhir']];
+                const summaryBody = [[
+                    formatPdfCurrency(monthOpeningBalance),
+                    formatPdfCurrency(totalDebet),
+                    formatPdfCurrency(totalKredit),
+                    formatPdfCurrency(calculatedSaldoAkhir)
+                ]];
+                const summaryTranslations = ['Opening Balance', 'Total Debit Transaction', 'Total Credit Transaction', 'Closing Balance'];
+
+                // Gambar tabel summary
+                doc.autoTable({
+                    startY: finalY_table + 10, // Beri jarak 10
+                    head: summaryHead,
+                    body: summaryBody,
+                    theme: 'grid', // 'grid' agar ada garis
+                    headStyles: {
+                        fillColor: [1, 110, 195], // Latar belakang biru
+                        textColor: [255, 255, 255],
+                        fontSize: 8,
+                        fontStyle: 'bold',
+                        halign: 'center',
+                        lineColor: [1, 110, 195],
+                        lineWidth: 0.5,
+                        minCellHeight: 25 // Beri ruang untuk 2 baris
+                    },
+                    bodyStyles: {
+                        fontSize: 8,
+                        halign: 'right',
+                        lineColor: [221, 221, 221],
+                        lineWidth: 0.5
+                    },
+                    alternateRowStyles: {
+                        fillColor: [248, 249, 250]
+                    },
+                    // Hook untuk menggambar teks inggris di header summary
+                    didDrawCell: (data) => {
+                        if (data.section === 'head' && data.column.index !== undefined) {
+                            const text = summaryTranslations[data.column.index];
+                            doc.saveGraphicsState();
+                            setSubTextStyle(doc); // Atur style (abu-abu, miring, kecil)
+                            doc.text(
+                                text, 
+                                data.cell.x + data.cell.width / 2, // X center
+                                data.cell.y + 24, // Y di bawah teks utama
+                                { align: 'center' }
+                            );
+                            doc.restoreGraphicsState();
+                        }
+                    }
+                });
+
+                // Dapatkan Y-posisi setelah tabel summary selesai
+                let finalY_summaryTable = doc.autoTable.previous.finalY;
+                let yPos = finalY_summaryTable + 25; // Y-posisi awal untuk teks di bawahnya
+
+                // Gambar bagian "Terbilang / In Words"
+                setMainTextStyle(doc, true); // Bold
+                doc.text("Terbilang / In Words", 40, yPos);
+                
+                // Teks Biaya Materai (di kanan)
+                setMainTextStyle(doc); // Normal
+                doc.text(
+                    "Biaya materai telah dibayar Lunas",
+                    pageWidth - margin, // X
+                    yPos, // Y
+                    { align: 'right' }
+                );
+                setSubTextStyle(doc); // Abu-abu
+                doc.text(
+                    "Revenue/Stamp Duty Paid",
+                    pageWidth - margin, // X
+                    yPos + 9, // Y
+                    { align: 'right' }
+                );
+                
+                // Teks Terbilang (di kiri)
+                yPos += 15; // Turunkan Y
+                const saldoBulat = Math.floor(calculatedSaldoAkhir); // Ambil angka bulat
+                
+                setMainTextStyle(doc); // Normal
+                doc.text(terbilang(saldoBulat) + " RUPIAH", 40, yPos);
+                
+                yPos += 10; // Turunkan Y
+                setSubTextStyle(doc); // Abu-abu
+                doc.text(inWords(saldoBulat) + " RUPIAH", 40, yPos);
+                
+                // Gambar Garis Pemisah (lagi)
+                yPos += 15; // Turunkan Y
+                doc.setLineDashPattern([1, 1], 0); 
+                doc.setDrawColor(180, 180, 180); 
+                doc.line(margin, yPos, pageWidth - margin, yPos); // Garis tunggal
+                doc.setLineDashPattern([], 0);
+                
+                // Gambar bagian "Catatan / Relevant Information"
+                yPos += 20; // Turunkan Y
+                setMainTextStyle(doc, true); // Bold
+                doc.text("Catatan / Relevant Information", 40, yPos);
+                
+                yPos += 12; // Turunkan Y
+                setMainTextStyle(doc); // Normal
+                doc.setFontSize(7); // Font lebih kecil untuk catatan
+                doc.text("• Apabila terdapat perbedaan dengan catatan Saudara, harap menghubungi kami selambat-lambatnya 14 hari sejak diterimanya rekening koran ini.", 40, yPos);
+                yPos += 9;
+                setSubTextStyle(doc);
+                doc.setFontSize(7);
+                doc.text("  In the case of any differences from your records, please contact us within 14 days from the receipt of this Statement of Account.", 40, yPos);
+                
+                yPos += 12;
+                setMainTextStyle(doc);
+                doc.setFontSize(7);
+                doc.text("• Salinan rekening ini dicetak komputer, tidak memerlukan tanda tangan pejabat Bank.", 40, yPos);
+                yPos += 9;
+                setSubTextStyle(doc);
+                doc.setFontSize(7);
+                doc.text("  The copy of this Statement of Account is computer generated, no official signature required.", 40, yPos);
+                
+                yPos += 12;
+                setMainTextStyle(doc);
+                doc.setFontSize(7);
+                doc.text("• Apabila ada perubahan alamat email mohon diinformasikan pada Unit Kerja BANK BRI.", 40, yPos);
+                yPos += 9;
+                setSubTextStyle(doc);
+                doc.setFontSize(7);
+                doc.text("  Please inform our nearest BRI Business Unit for any changes of your email address.", 40, yPos);
+                
+                // --- [AKHIR BAGIAN SUMMARY] ---
+
+                // Panggil fungsi watermark SETELAH autoTable selesai
+                if (typeof doc.putTotalPages === 'function') {
+                    doc.putTotalPages("{totalPages}");
+                }
+                
+                // Panggil fungsi watermark di akhir sebelum menyimpan
+                addWatermark(doc); 
+
+                // 11. Simpan PDF
+                doc.save(`eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}.pdf`);
+
+            } catch (error) {
+                console.error("Gagal membuat e-Statement:", error);
+                alert("Terjadi kesalahan saat membuat PDF: " + error.message);
+            } finally {
+                estatementBtn.disabled = false;
+                estatementBtn.textContent = 'Buat e-Statement';
+            }
+        }
+        
+        // --- Skrip Loading & Pre-cache (Tidak berubah) ---
+        
+        const loadingScreen = document.getElementById('loading-screen');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const welcomeBtn = document.getElementById('welcome-button');
+        const loginScreen = document.getElementById('login-screen'); 
+        const appContainerOnLoad = document.querySelector('.app-container');
+        const floatingBtnOnLoad = document.getElementById('floating-widget-button');
+
+        const bgImages = ['1.jpg', '2.jpg', '3.jpg', '4.jpg'];
+        const otherAssets = [
+            'login.jpg',
+            'baground.jpg', 'mata.png', 'mata1.png', 
+            'home.png', 'mutasi.png'
+        ];
+        const assetsToPreload = bgImages.concat(otherAssets);
+
+        function preloadImages(urls) {
+            const promises = urls.map(url => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = url;
+                    img.onload = resolve;
+                    img.onerror = resolve;
+                });
+            });
+            return Promise.all(promises);
+        }
+
+        const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        async function startApp() {
+            const preloadPromise = preloadImages(assetsToPreload);
+            const minimumDelayPromise = delay(4500); 
+
+            await Promise.all([preloadPromise, minimumDelayPromise]);
+
+            loadingScreen.style.display = 'none';
+            welcomeScreen.style.display = 'block';
+            startWelcomeScreenLogic();
+        }
+
+        function startWelcomeScreenLogic() {
+            let currentBgIndex = 0;
+            let slideInterval; 
+
+            function changeBackground() {
+                currentBgIndex = (currentBgIndex + 1) % bgImages.length;
+                welcomeScreen.style.backgroundImage = `url(${bgImages[currentBgIndex]})`;
+            }
+
+            function startSlideShow() {
+                clearInterval(slideInterval);
+                slideInterval = setInterval(changeBackground, 15000); 
+            }
+
+            welcomeScreen.style.backgroundImage = `url(${bgImages[0]})`;
+            startSlideShow();
+
+            welcomeScreen.addEventListener('click', () => {
+                changeBackground(); 
+                startSlideShow();   
+            });
+
+            welcomeBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); 
+                clearInterval(slideInterval);
+                welcomeScreen.style.display = 'none'; 
+                loginScreen.style.display = 'flex'; 
+            });
+        }
+
+        // --- MULAI APLIKASI ---
+        startApp();
+        
+
+        // --- Skrip Login (Tidak berubah) ---
+        const loginUsernameEl = document.getElementById('login-username');
+        const loginPasswordEl = document.getElementById('login-password');
+        const loginButton = document.getElementById('login-button');
+        const togglePasswordBtn = document.getElementById('toggle-password');
+        const eyeIconOpen = document.getElementById('eye-icon-open');
+        const eyeIconClosed = document.getElementById('eye-icon-closed');
+
+        togglePasswordBtn.addEventListener('click', () => {
+            if (loginPasswordEl.type === 'password') {
+                loginPasswordEl.type = 'text';
+                eyeIconOpen.style.display = 'none';
+                eyeIconClosed.style.display = 'block';
+            } else {
+                loginPasswordEl.type = 'password';
+                eyeIconOpen.style.display = 'block';
+                eyeIconClosed.style.display = 'none';
+            }
+        });
+
+        loginButton.addEventListener('click', async () => {
+            const username = loginUsernameEl.value;
+            const password = loginPasswordEl.value;
+            
+            if (!username || !password) {
+                alert('Username dan Password tidak boleh kosong!');
+                return;
+            }
+
+            loginButton.disabled = true;
+            loginButton.textContent = 'Memuat...';
+
+            try { 
+                const result = await window.initFirebaseAndLogin(username, password);
+
+                if (result.success) {
+                    loginScreen.style.display = 'none';
+                    appContainerOnLoad.style.display = 'block'; 
+                    floatingBtnOnLoad.style.display = 'flex';
+                } else {
+                    alert(result.message);
+                    loginButton.disabled = false;
+                    loginButton.textContent = 'Login';
+                }
+            } catch (error) { 
+                console.error("Error kritis pada event listener login:", error);
+                alert("Gagal memanggil fungsi login. Error: " + error.message);
+                loginButton.disabled = false;
+                loginButton.textContent = 'Login';
+            }
+        });
+
+
+        // --- Skrip Saldo (LOGIKA DIPERBARUI) ---
+        const balanceAmountEl = document.getElementById('balance-amount');
+        const toggleBalanceBtn = document.getElementById('toggle-balance');
+        let isBalanceHidden = true;
+        const hiddenBalance = "••••••"; 
+        const eyeIcon = document.createElement('img');
+        eyeIcon.src = 'mata.png'; 
+        toggleBalanceBtn.appendChild(eyeIcon); 
+
+        function updateBalanceView(balanceString) {
+            if (isBalanceHidden) {
+                balanceAmountEl.textContent = hiddenBalance;
+                eyeIcon.src = 'mata.png'; 
+            } else {
+                balanceAmountEl.textContent = balanceString || "0"; 
+                eyeIcon.src = 'mata1.png'; 
+            }
+        }
+        // Expose ke window agar bisa dipanggil modul
+        window.updateBalanceView = updateBalanceView; 
+
+        toggleBalanceBtn.addEventListener('click', () => {
+            isBalanceHidden = !isBalanceHidden; 
+            updateBalanceView(window.currentCalculatedBalanceString);
+        });
+        
+       
+        // --- Skrip Jendela Mengambang (Toggle Tampilan) (Tidak berubah) ---
+        const floatingBtn = document.getElementById('floating-widget-button');
+        const floatingImage = document.getElementById('floating-image');
+        const appContainerForToggle = document.querySelector('.app-container');
+        let isHomeImage = true; 
+        floatingBtn.addEventListener('click', () => {
+            isHomeImage = !isHomeImage; 
+            appContainerForToggle.classList.toggle('mutasi-view');
+            if (isHomeImage) {
+                floatingImage.src = 'home.png';
+                floatingImage.alt = 'Home Button';
+            } else {
+                floatingImage.src = 'mutasi.png';
+                floatingImage.alt = 'Mutasi Button';
+            }
+        });
+
+        // --- Skrip Modal Rentang Waktu (Tidak berubah) ---
+        const rentangWaktuBtn = document.getElementById('rentang-waktu-btn');
+        const timeRangeOverlay = document.getElementById('time-range-overlay');
+        const timeRangeCancel = document.getElementById('time-range-cancel');
+        const timeRangeOptions = document.querySelectorAll('.time-range-option');
+        const rentangWaktuLabel = document.getElementById('rentang-waktu-btn'); 
+        rentangWaktuBtn.addEventListener('click', () => {
+            timeRangeOverlay.classList.add('show');
+        });
+        const hideModal = () => {
+            timeRangeOverlay.classList.remove('show');
+        };
+        timeRangeOverlay.addEventListener('click', (e) => {
+            if (e.target === timeRangeOverlay) { 
+                hideModal();
+            }
+        });
+        timeRangeCancel.addEventListener('click', hideModal);
+        timeRangeOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const selectedText = option.textContent;
+                rentangWaktuLabel.textContent = selectedText; 
+                hideModal();
+            });
+        });
+
+        // --- LOGIKA: Populasi Filter Tanggal e-Statement (Tidak berubah) ---
+        const selectBulan = document.getElementById('select-bulan');
+        const selectTahun = document.getElementById('select-tahun');
+
+        function populateDateFilters() {
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            const now = new Date();
+            
+            months.forEach((month, index) => {
+                const option = document.createElement('option');
+                option.value = index; // 0-11
+                option.textContent = month;
+                selectBulan.appendChild(option);
+            });
+            selectBulan.value = now.getMonth(); 
+
+            const currentYear = now.getFullYear();
+            const startYear = 2020;
+            for (let year = currentYear; year >= startYear; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                selectTahun.appendChild(option);
+            }
+            selectTahun.value = currentYear;
+        }
+        populateDateFilters();
+
+
+        // --- LOGIKA: Pergantian Tab Mutasi & e-Statement (Tidak berubah) ---
+        const mutasiHeader = document.querySelector('.mutasi-header');
+        const tabMutasi = document.getElementById('tab-mutasi');
+        const tabEstatement = document.getElementById('tab-estatement');
+        const contentMutasi = document.getElementById('mutasi-transaksi-content');
+        const contentEstatement = document.getElementById('estatement-content');
+
+        tabMutasi.addEventListener('click', () => {
+            if (!tabMutasi.classList.contains('active')) {
+                tabMutasi.classList.add('active');
+                tabEstatement.classList.remove('active');
+                contentMutasi.style.display = 'flex';
+                contentEstatement.style.display = 'none';
+                mutasiHeader.textContent = 'Mutasi';
+            }
+        });
+
+        tabEstatement.addEventListener('click', () => {
+            if (!tabEstatement.classList.contains('active')) {
+                tabEstatement.classList.add('active');
+                tabMutasi.classList.remove('active');
+                contentEstatement.style.display = 'flex';
+                contentMutasi.style.display = 'none';
+                mutasiHeader.textContent = 'Buat e-Statement';
+            }
+        });
+        
+        // --- LOGIKA: Filter e-Statement (Bulanan / Semua) (Tidak berubah) ---
+        const radioBulanan = document.getElementById('radio-bulanan');
+        const radioSemua = document.getElementById('radio-semua');
+        const dateFilterGroup = document.querySelector('.estatement-date-filter-group');
+        
+        radioBulanan.addEventListener('change', () => {
+            if (radioBulanan.checked) {
+                dateFilterGroup.style.display = 'flex';
+            }
+        });
+        
+        radioSemua.addEventListener('change', () => {
+            if (radioSemua.checked) {
+                dateFilterGroup.style.display = 'none';
+            }
+        });
+
+        // --- Event listener untuk tombol Buat e-Statement (Tidak berubah) ---
+        const estatementBtn = document.getElementById('buat-estatement-btn');
+        estatementBtn.addEventListener('click', generateEStatement);
+
+    </script>
+
+</body>
+</html>
