@@ -309,19 +309,21 @@
             box-shadow: none; 
         }
         
+        /* --- PERUBAHAN 1 DI SINI --- */
         #username-group {
             margin-bottom: 5px; 
-            bottom: 10px;
+            bottom: 0px; /* Diubah dari 10px -> 0px (Geser 10px ke Bawah) */
         }
 
         #password-group {
             bottom: 5px;
         }
 
+        /* --- PERUBAHAN 2 DI SINI --- */
         .input-group input {
             border: none;
             outline: none;
-            font-size: 1.3rem; 
+            font-size: 1.04rem; /* Diperkecil 20% (dari 1.3rem) */
             flex: 1;
             color: #333;
             -webkit-appearance: none;
@@ -780,7 +782,8 @@
             </div>
             <div class="input-group" id="password-group">
                 <input type="password" id="login-password" placeholder="Password">
-            <span id="toggle-password" class="eye-icon">
+                
+                <span id="toggle-password" class="eye-icon">
                     <svg id="eye-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <svg id="eye-icon-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94C16.236 19.162 14.176 19.88 12 19.88C5.01 19.88 1 12 1 12C2.28 9.33 4.14 7.1 6.36 5.61M21.64 14.39C22.46 13.31 23 12 23 12C23 12 18.99 4.12 12 4.12C10.83 4.12 9.72 4.3 8.67 4.63M12 9C10.3431 9 9 10.3431 9 12C9 12.331 9.06245 12.648 9.17641 12.942M15 12C15 13.6569 13.6569 15 12 15C11.562 15 11.144 14.919 10.758 14.774" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 1L23 23" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </span>
