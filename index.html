@@ -2,9 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    
     <title>BRImo UI</title>
 
     <script src="jspdf.min.js"></script>
@@ -251,17 +249,20 @@
             background-size: contain;
             background-position: center top;
             background-repeat: no-repeat;
-            transition: background-image 2s ease-in-out;
             cursor: pointer; 
             -webkit-tap-highlight-color: transparent;
             display: none;
+            
+            /* --- PERUBAHAN CSS DI SINI --- */
+            /* Hapus transisi background-image dan ganti dengan opacity */
+            /* transition: background-image 2s ease-in-out; */ /* <-- DIHAPUS */
+            transition: opacity 0.5s ease-in-out; /* <-- DITAMBAHKAN */
         }
         
-        /* --- 2. PERUBAHAN DI SINI --- */
         #welcome-button {
             position: absolute;
             bottom: 20px;
-            right: 50px; /* Diubah dari 55px menjadi 50px (geser 5px ke kanan) */
+            right: 50px; /* Diubah dari 55px menjadi 50px */
             padding: 6px 12px; 
             border-radius: 0px; 
             font-size: 0.75rem; 
@@ -1228,20 +1229,18 @@
                 setMainTextStyle(doc);
                 doc.text("Yth : / To :", 40, 100);
                 
-                // --- [BARU] Kotak (Border) Alamat ---
-                doc.setDrawColor(180, 180, 180); // Set color to grey
+                // --- Kotak (Border) Alamat ---
+                doc.setDrawColor(180, 180, 180); 
                 doc.setLineWidth(0.5);
-                // x, y, width, height. y=110, height=50 akan (110 s/d 160)
                 doc.rect(40, 110, 250, 50); 
-                // --- [AKHIR BARU] ---
                 
                 doc.setFont('helvetica', 'bold'); 
                 doc.setFontSize(9);
-                doc.text(userData.profile_username.toUpperCase(), 45, 125); // X digeser 5 agar ada padding
+                doc.text(userData.profile_username.toUpperCase(), 45, 125); 
                 
                 setMainTextStyle(doc); 
-                doc.text("URANGAGUNG RT 008/003", 45, 137); // X digeser 5
-                doc.text("SIDOARJO, SIDOARJO", 45, 149); // X digeser 5
+                doc.text("URANGAGUNG RT 008/003", 45, 137); 
+                doc.text("SIDOARJO, SIDOARJO", 45, 149); 
                 
                 setMainTextStyle(doc);
                 doc.text("No. Rekening", 40, 175);
@@ -1343,12 +1342,10 @@
                         5: { halign: 'right' }  
                     },
                     didDrawPage: (data) => {
-                        // Hook ini menangani header/footer di SETIAP halaman (termasuk yg baru)
                         doc.setFontSize(8);
                         doc.setFont('helvetica', 'normal');
                         setMainTextStyle(doc); 
                         
-                        // Footer (Timestamp) - Kanan Bawah
                         const tglCetak = new Date().toLocaleString('en-GB', { hour12: false });
                         doc.text(
                             tglCetak, 
@@ -1357,7 +1354,6 @@
                             { align: 'right' }
                         );
                         
-                        // Header (Page Number) - Kanan Atas
                         let pageStr = "Halaman " + doc.internal.getNumberOfPages();
                         if (typeof doc.putTotalPages === 'function') {
                             pageStr = pageStr + " dari " + "{totalPages}"; 
@@ -1373,21 +1369,15 @@
 
                 // --- 10. Tambahkan Bagian Summary di Akhir ---
                 
-                // Dapatkan Y-posisi setelah tabel transaksi selesai
                 let finalY_table = doc.autoTable.previous.finalY;
-
-                // Hitung total debet/kredit untuk periode yang difilter
                 let totalDebet = 0;
                 let totalKredit = 0;
-                // txsForPeriod sudah di-reverse (oldest to newest)
                 txsForPeriod.forEach(tx => { 
                     if (tx.txAmount > 0) totalDebet += tx.txAmount;
                     if (tx.txAmount < 0) totalKredit += Math.abs(tx.txAmount);
                 });
-                // Hitung Saldo Akhir periode
                 const calculatedSaldoAkhir = monthOpeningBalance + totalDebet - totalKredit;
 
-                // Siapkan data untuk tabel summary
                 const summaryHead = [['Saldo Awal', 'Total Transaksi Debet', 'Total Transaksi Kredit', 'Saldo Akhir']];
                 const summaryBody = [[
                     formatPdfCurrency(monthOpeningBalance),
@@ -1397,21 +1387,20 @@
                 ]];
                 const summaryTranslations = ['Opening Balance', 'Total Debit Transaction', 'Total Credit Transaction', 'Closing Balance'];
 
-                // Gambar tabel summary
                 doc.autoTable({
-                    startY: finalY_table + 10, // Beri jarak 10
+                    startY: finalY_table + 10, 
                     head: summaryHead,
                     body: summaryBody,
-                    theme: 'grid', // 'grid' agar ada garis
+                    theme: 'grid', 
                     headStyles: {
-                        fillColor: [1, 110, 195], // Latar belakang biru
+                        fillColor: [1, 110, 195], 
                         textColor: [255, 255, 255],
                         fontSize: 8,
                         fontStyle: 'bold',
                         halign: 'center',
                         lineColor: [1, 110, 195],
                         lineWidth: 0.5,
-                        minCellHeight: 25 // Beri ruang untuk 2 baris
+                        minCellHeight: 25 
                     },
                     bodyStyles: {
                         fontSize: 8,
@@ -1422,16 +1411,15 @@
                     alternateRowStyles: {
                         fillColor: [248, 249, 250]
                     },
-                    // Hook untuk menggambar teks inggris di header summary
                     didDrawCell: (data) => {
                         if (data.section === 'head' && data.column.index !== undefined) {
                             const text = summaryTranslations[data.column.index];
                             doc.saveGraphicsState();
-                            setSubTextStyle(doc); // Atur style (abu-abu, miring, kecil)
+                            setSubTextStyle(doc); 
                             doc.text(
                                 text, 
-                                data.cell.x + data.cell.width / 2, // X center
-                                data.cell.y + 24, // Y di bawah teks utama
+                                data.cell.x + data.cell.width / 2, 
+                                data.cell.y + 24, 
                                 { align: 'center' }
                             );
                             doc.restoreGraphicsState();
@@ -1439,56 +1427,50 @@
                     }
                 });
 
-                // Dapatkan Y-posisi setelah tabel summary selesai
                 let finalY_summaryTable = doc.autoTable.previous.finalY;
-                let yPos = finalY_summaryTable + 25; // Y-posisi awal untuk teks di bawahnya
+                let yPos = finalY_summaryTable + 25; 
 
-                // Gambar bagian "Terbilang / In Words"
-                setMainTextStyle(doc, true); // Bold
+                setMainTextStyle(doc, true); 
                 doc.text("Terbilang / In Words", 40, yPos);
                 
-                // Teks Biaya Materai (di kanan)
-                setMainTextStyle(doc); // Normal
+                setMainTextStyle(doc); 
                 doc.text(
                     "Biaya materai telah dibayar Lunas",
-                    pageWidth - margin, // X
-                    yPos, // Y
+                    pageWidth - margin, 
+                    yPos, 
                     { align: 'right' }
                 );
-                setSubTextStyle(doc); // Abu-abu
+                setSubTextStyle(doc); 
                 doc.text(
                     "Revenue/Stamp Duty Paid",
-                    pageWidth - margin, // X
-                    yPos + 9, // Y
+                    pageWidth - margin, 
+                    yPos + 9, 
                     { align: 'right' }
                 );
                 
-                // Teks Terbilang (di kiri)
-                yPos += 15; // Turunkan Y
-                const saldoBulat = Math.floor(calculatedSaldoAkhir); // Ambil angka bulat
+                yPos += 15; 
+                const saldoBulat = Math.floor(calculatedSaldoAkhir); 
                 
-                setMainTextStyle(doc); // Normal
+                setMainTextStyle(doc); 
                 doc.text(terbilang(saldoBulat) + " RUPIAH", 40, yPos);
                 
-                yPos += 10; // Turunkan Y
-                setSubTextStyle(doc); // Abu-abu
+                yPos += 10; 
+                setSubTextStyle(doc); 
                 doc.text(inWords(saldoBulat) + " RUPIAH", 40, yPos);
                 
-                // Gambar Garis Pemisah (lagi)
-                yPos += 15; // Turunkan Y
+                yPos += 15; 
                 doc.setLineDashPattern([1, 1], 0); 
                 doc.setDrawColor(180, 180, 180); 
-                doc.line(margin, yPos, pageWidth - margin, yPos); // Garis tunggal
+                doc.line(margin, yPos, pageWidth - margin, yPos); 
                 doc.setLineDashPattern([], 0);
                 
-                // Gambar bagian "Catatan / Relevant Information"
-                yPos += 20; // Turunkan Y
-                setMainTextStyle(doc, true); // Bold
+                yPos += 20; 
+                setMainTextStyle(doc, true); 
                 doc.text("Catatan / Relevant Information", 40, yPos);
                 
-                yPos += 12; // Turunkan Y
-                setMainTextStyle(doc); // Normal
-                doc.setFontSize(7); // Font lebih kecil untuk catatan
+                yPos += 12; 
+                setMainTextStyle(doc); 
+                doc.setFontSize(7); 
                 doc.text("• Apabila terdapat perbedaan dengan catatan Saudara, harap menghubungi kami selambat-lambatnya 14 hari sejak diterimanya rekening koran ini.", 40, yPos);
                 yPos += 9;
                 setSubTextStyle(doc);
@@ -1515,12 +1497,10 @@
                 
                 // --- [AKHIR BAGIAN SUMMARY] ---
 
-                // Panggil fungsi watermark SETELAH autoTable selesai
                 if (typeof doc.putTotalPages === 'function') {
                     doc.putTotalPages("{totalPages}");
                 }
                 
-                // Panggil fungsi watermark di akhir sebelum menyimpan
                 addWatermark(doc); 
 
                 // 11. 🚀 PERUBAHAN UTAMA: Kirim ke Android jika ada 🚀
@@ -1530,7 +1510,6 @@
                     // Jika jembatan "Android" dan fungsi "savePdf" ada...
                     
                     // 1. Ubah PDF menjadi string Base64
-                    // Ini adalah string data lengkap, misal: "data:application/pdf;base64,JVBER..."
                     const pdfData = doc.output('datauristring');
                     
                     // 2. Kirim data ke Android (Java)
@@ -1552,7 +1531,7 @@
             }
         }
         
-        // --- Skrip Loading & Pre-cache (Tidak berubah) ---
+        // --- Skrip Loading & Pre-cache ---
         
         const loadingScreen = document.getElementById('loading-screen');
         const welcomeScreen = document.getElementById('welcome-screen');
@@ -1594,28 +1573,51 @@
             startWelcomeScreenLogic();
         }
 
+        // --- PERUBAHAN LOGIKA SLIDESHOW DI SINI ---
         function startWelcomeScreenLogic() {
             let currentBgIndex = 0;
             let slideInterval; 
+            let isChanging = false; // Flag untuk mencegah transisi bentrok
 
             function changeBackground() {
-                currentBgIndex = (currentBgIndex + 1) % bgImages.length;
-                welcomeScreen.style.backgroundImage = `url(${bgImages[currentBgIndex]})`;
+                if (isChanging) return; // Jangan jalankan jika sedang transisi
+                isChanging = true;
+
+                // 1. Fade out
+                welcomeScreen.style.opacity = 0;
+
+                // 2. Tunggu transisi fade-out selesai (500ms)
+                setTimeout(() => {
+                    // 3. Ganti gambar
+                    currentBgIndex = (currentBgIndex + 1) % bgImages.length;
+                    welcomeScreen.style.backgroundImage = `url(${bgImages[currentBgIndex]})`;
+                    
+                    // 4. Fade in
+                    welcomeScreen.style.opacity = 1;
+
+                    // 5. Selesai transisi (setelah 500ms lagi agar tidak bentrok)
+                    setTimeout(() => {
+                        isChanging = false; 
+                    }, 500); // Durasi fade-in
+                    
+                }, 500); // HARUS SAMA dengan durasi transisi CSS (0.5s)
             }
 
             function startSlideShow() {
                 clearInterval(slideInterval);
-                slideInterval = setInterval(changeBackground, 15000); 
+                slideInterval = setInterval(changeBackground, 15000); // 15 detik
             }
-
+            
+            // Set gambar pertama & opacity
             welcomeScreen.style.backgroundImage = `url(${bgImages[0]})`;
+            welcomeScreen.style.opacity = 1; // Pastikan opacity 1 di awal
             startSlideShow();
 
             welcomeScreen.addEventListener('click', () => {
                 changeBackground(); 
-                startSlideShow();   
+                startSlideShow(); // Reset interval
             });
-
+            
             welcomeBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); 
                 clearInterval(slideInterval);
@@ -1623,6 +1625,7 @@
                 loginScreen.style.display = 'flex'; 
             });
         }
+        // --- AKHIR PERUBAHAN SLIDESHOW ---
 
         // --- MULAI APLIKASI ---
         startApp();
