@@ -210,9 +210,6 @@
     </script>
     
     <style>
-        /* CSS TIDAK BERUBAH DARI SEBELUMNYA */
-        /* ... (SEMUA CSS ANDA DARI SEBELUMNYA ADA DI SINI) ... */
-        
         /* Mengatur dasar halaman */
         body {
             margin: 0;
@@ -225,7 +222,7 @@
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        /* --- CSS Layar Loading (Tidak berubah) --- */
+        /* --- CSS Layar Loading --- */
         #loading-screen {
             position: fixed;
             top: 0;
@@ -240,7 +237,7 @@
             background-repeat: no-repeat;
         }
 
-        /* --- CSS Halaman Sambutan (Tidak berubah) --- */
+        /* --- CSS Halaman Sambutan --- */
         #welcome-screen {
             position: fixed;
             top: 0;
@@ -278,7 +275,7 @@
             background-color: #f0f0f0; 
         }
 
-        /* --- CSS Layar Login (Tidak berubah) --- */
+        /* --- CSS Layar Login --- */
         #login-screen {
             width: 390px;
             height: 844px;
@@ -407,7 +404,6 @@
 
         .top-bar { display: flex; align-items: center; height: 30px; margin-top: -25.5px; margin-left: 38.2px; }
         
-        /* Mengubah input menjadi span */
         #editable-username { 
             background: transparent; 
             border: none; 
@@ -544,7 +540,7 @@
         .mutasi-item-amount .time { font-size: 0.8rem; color: #777; margin-top: 2px; text-align: right; }
 
         
-        /* --- CSS BARU UNTUK e-Statement --- */
+        /* --- CSS untuk e-Statement --- */
         
         #mutasi-content-container {
             flex: 1;
@@ -717,7 +713,7 @@
         #buat-estatement-btn:hover {
             background-color: #0161AC;
         }
-        /* Style disabled untuk tombol e-statement */
+        
         #buat-estatement-btn:disabled {
             background-color: #ccc;
             cursor: wait;
@@ -978,7 +974,7 @@
             }
         }
         
-        // --- [BARU] FUNGSI HELPER TERBILANG (BAHASA INDONESIA) ---
+        // --- FUNGSI HELPER TERBILANG (BAHASA INDONESIA) ---
         function terbilang(angka) {
             const bil = ["", "SATU", "DUA", "TIGA", "EMPAT", "LIMA", "ENAM", "TUJUH", "DELAPAN", "SEMBILAN", "SEPULUH", "SEBELAS"];
             
@@ -1006,16 +1002,15 @@
                 }
             }
             
-            // Ambil bagian bulat saja (abaikan koma)
             const angkaBulat = Math.floor(Math.abs(angka));
-            let hasil = getTerbilang(angkaBulat).replace(/\s+/g, ' ').trim(); // Rapikan spasi
+            let hasil = getTerbilang(angkaBulat).replace(/\s+/g, ' ').trim(); 
             if (angka < 0) {
                 hasil = "MINUS " + hasil;
             }
             return hasil === "" ? "NOL" : hasil;
         }
 
-        // --- [BARU] FUNGSI HELPER TERBILANG (BAHASA INGGRIS) ---
+        // --- FUNGSI HELPER TERBILANG (BAHASA INGGRIS) ---
         function inWords(num) {
             const a = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN', 'SEVENTEEN', 'EIGHTEEN', 'NINETEEN'];
             const b = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY'];
@@ -1038,7 +1033,6 @@
                 return str;
             }
             
-            // Ambil bagian bulat saja (abaikan koma)
             let numAbs = Math.floor(Math.abs(num));
             if (numAbs === 0) return 'ZERO';
 
@@ -1057,17 +1051,17 @@
                 str = "NEGATIVE " + str;
             }
             
-            return str.replace(/\s+/g, ' ').trim(); // Rapikan spasi
+            return str.replace(/\s+/g, ' ').trim(); 
         }
 
         
         // ===================================================================
-        // === FUNGSI generateEStatement (TELAH DIMODIFIKASI) ===
+        // === FUNGSI generateEStatement (FINAL) ===
         // ===================================================================
         
         /**
          * Fungsi utama untuk membuat PDF e-Statement
-         * *** LOGIKA DIPERBARUI UNTUK MENAMBAHKAN HALAMAN SUMMARY ***
+         * *** LOGIKA DIPERBARUI UNTUK MENGIRIM DATA KE ANDROID ***
          */
         async function generateEStatement() {
             const estatementBtn = document.getElementById('buat-estatement-btn');
@@ -1094,13 +1088,13 @@
                 function setSubTextStyle(doc) {
                     doc.setFont('helvetica', 'italic');
                     doc.setFontSize(8);
-                    doc.setTextColor(128, 128, 128); // Grey
+                    doc.setTextColor(128, 128, 128); 
                     doc.setGState(new doc.GState({ opacity: 0.8 })); 
                 }
                 function setMainTextStyle(doc, isBold = false) {
                     doc.setFont('helvetica', isBold ? 'bold' : 'normal');
                     doc.setFontSize(9);
-                    doc.setTextColor(0, 0, 0); // Black
+                    doc.setTextColor(0, 0, 0); 
                     doc.setGState(new doc.GState({ opacity: 1 })); 
                 }
                 
@@ -1230,12 +1224,20 @@
                 // --- Info Kiri (Dengan Gaya Baru) ---
                 setMainTextStyle(doc);
                 doc.text("Yth : / To :", 40, 100);
+                
+                // --- Kotak (Border) Alamat ---
+                doc.setDrawColor(180, 180, 180); 
+                doc.setLineWidth(0.5);
+                doc.rect(40, 110, 250, 50); 
+                
                 doc.setFont('helvetica', 'bold'); 
                 doc.setFontSize(9);
-                doc.text(userData.profile_username.toUpperCase(), 40, 125);
+                doc.text(userData.profile_username.toUpperCase(), 45, 125); 
+                
                 setMainTextStyle(doc); 
-                doc.text("URANGAGUNG RT 008/003", 40, 137);
-                doc.text("SIDOARJO, SIDOARJO", 40, 149);
+                doc.text("URANGAGUNG RT 008/003", 45, 137); 
+                doc.text("SIDOARJO, SIDOARJO", 45, 149); 
+                
                 setMainTextStyle(doc);
                 doc.text("No. Rekening", 40, 175);
                 setSubTextStyle(doc);
@@ -1297,7 +1299,6 @@
                 doc.setLineDashPattern([], 0);
                 doc.setDrawColor(0, 0, 0); 
                 
-
                 // 9. Buat Tabel Transaksi (Tabel Utama)
                 doc.autoTable({
                     startY: 270, 
@@ -1337,12 +1338,10 @@
                         5: { halign: 'right' }  
                     },
                     didDrawPage: (data) => {
-                        // Hook ini menangani header/footer di SETIAP halaman (termasuk yg baru)
                         doc.setFontSize(8);
                         doc.setFont('helvetica', 'normal');
                         setMainTextStyle(doc); 
                         
-                        // Footer (Timestamp) - Kanan Bawah
                         const tglCetak = new Date().toLocaleString('en-GB', { hour12: false });
                         doc.text(
                             tglCetak, 
@@ -1351,7 +1350,6 @@
                             { align: 'right' }
                         );
                         
-                        // Header (Page Number) - Kanan Atas
                         let pageStr = "Halaman " + doc.internal.getNumberOfPages();
                         if (typeof doc.putTotalPages === 'function') {
                             pageStr = pageStr + " dari " + "{totalPages}"; 
@@ -1365,23 +1363,17 @@
                     }
                 });
 
-                // --- [BARU] 10. Tambahkan Bagian Summary di Akhir ---
+                // --- 10. Tambahkan Bagian Summary di Akhir ---
                 
-                // Dapatkan Y-posisi setelah tabel transaksi selesai
                 let finalY_table = doc.autoTable.previous.finalY;
-
-                // Hitung total debet/kredit untuk periode yang difilter
                 let totalDebet = 0;
                 let totalKredit = 0;
-                // txsForPeriod sudah di-reverse (oldest to newest)
                 txsForPeriod.forEach(tx => { 
                     if (tx.txAmount > 0) totalDebet += tx.txAmount;
                     if (tx.txAmount < 0) totalKredit += Math.abs(tx.txAmount);
                 });
-                // Hitung Saldo Akhir periode
                 const calculatedSaldoAkhir = monthOpeningBalance + totalDebet - totalKredit;
 
-                // Siapkan data untuk tabel summary
                 const summaryHead = [['Saldo Awal', 'Total Transaksi Debet', 'Total Transaksi Kredit', 'Saldo Akhir']];
                 const summaryBody = [[
                     formatPdfCurrency(monthOpeningBalance),
@@ -1391,21 +1383,20 @@
                 ]];
                 const summaryTranslations = ['Opening Balance', 'Total Debit Transaction', 'Total Credit Transaction', 'Closing Balance'];
 
-                // Gambar tabel summary
                 doc.autoTable({
-                    startY: finalY_table + 10, // Beri jarak 10
+                    startY: finalY_table + 10, 
                     head: summaryHead,
                     body: summaryBody,
-                    theme: 'grid', // 'grid' agar ada garis
+                    theme: 'grid', 
                     headStyles: {
-                        fillColor: [1, 110, 195], // Latar belakang biru
+                        fillColor: [1, 110, 195], 
                         textColor: [255, 255, 255],
                         fontSize: 8,
                         fontStyle: 'bold',
                         halign: 'center',
                         lineColor: [1, 110, 195],
                         lineWidth: 0.5,
-                        minCellHeight: 25 // Beri ruang untuk 2 baris
+                        minCellHeight: 25 
                     },
                     bodyStyles: {
                         fontSize: 8,
@@ -1416,16 +1407,15 @@
                     alternateRowStyles: {
                         fillColor: [248, 249, 250]
                     },
-                    // Hook untuk menggambar teks inggris di header summary
                     didDrawCell: (data) => {
                         if (data.section === 'head' && data.column.index !== undefined) {
                             const text = summaryTranslations[data.column.index];
                             doc.saveGraphicsState();
-                            setSubTextStyle(doc); // Atur style (abu-abu, miring, kecil)
+                            setSubTextStyle(doc); 
                             doc.text(
                                 text, 
-                                data.cell.x + data.cell.width / 2, // X center
-                                data.cell.y + 24, // Y di bawah teks utama
+                                data.cell.x + data.cell.width / 2, 
+                                data.cell.y + 24, 
                                 { align: 'center' }
                             );
                             doc.restoreGraphicsState();
@@ -1433,56 +1423,50 @@
                     }
                 });
 
-                // Dapatkan Y-posisi setelah tabel summary selesai
                 let finalY_summaryTable = doc.autoTable.previous.finalY;
-                let yPos = finalY_summaryTable + 25; // Y-posisi awal untuk teks di bawahnya
+                let yPos = finalY_summaryTable + 25; 
 
-                // Gambar bagian "Terbilang / In Words"
-                setMainTextStyle(doc, true); // Bold
+                setMainTextStyle(doc, true); 
                 doc.text("Terbilang / In Words", 40, yPos);
                 
-                // Teks Biaya Materai (di kanan)
-                setMainTextStyle(doc); // Normal
+                setMainTextStyle(doc); 
                 doc.text(
                     "Biaya materai telah dibayar Lunas",
-                    pageWidth - margin, // X
-                    yPos, // Y
+                    pageWidth - margin, 
+                    yPos, 
                     { align: 'right' }
                 );
-                setSubTextStyle(doc); // Abu-abu
+                setSubTextStyle(doc); 
                 doc.text(
                     "Revenue/Stamp Duty Paid",
-                    pageWidth - margin, // X
-                    yPos + 9, // Y
+                    pageWidth - margin, 
+                    yPos + 9, 
                     { align: 'right' }
                 );
                 
-                // Teks Terbilang (di kiri)
-                yPos += 15; // Turunkan Y
-                const saldoBulat = Math.floor(calculatedSaldoAkhir); // Ambil angka bulat
+                yPos += 15; 
+                const saldoBulat = Math.floor(calculatedSaldoAkhir); 
                 
-                setMainTextStyle(doc); // Normal
+                setMainTextStyle(doc); 
                 doc.text(terbilang(saldoBulat) + " RUPIAH", 40, yPos);
                 
-                yPos += 10; // Turunkan Y
-                setSubTextStyle(doc); // Abu-abu
+                yPos += 10; 
+                setSubTextStyle(doc); 
                 doc.text(inWords(saldoBulat) + " RUPIAH", 40, yPos);
                 
-                // Gambar Garis Pemisah (lagi)
-                yPos += 15; // Turunkan Y
+                yPos += 15; 
                 doc.setLineDashPattern([1, 1], 0); 
                 doc.setDrawColor(180, 180, 180); 
-                doc.line(margin, yPos, pageWidth - margin, yPos); // Garis tunggal
+                doc.line(margin, yPos, pageWidth - margin, yPos); 
                 doc.setLineDashPattern([], 0);
                 
-                // Gambar bagian "Catatan / Relevant Information"
-                yPos += 20; // Turunkan Y
-                setMainTextStyle(doc, true); // Bold
+                yPos += 20; 
+                setMainTextStyle(doc, true); 
                 doc.text("Catatan / Relevant Information", 40, yPos);
                 
-                yPos += 12; // Turunkan Y
-                setMainTextStyle(doc); // Normal
-                doc.setFontSize(7); // Font lebih kecil untuk catatan
+                yPos += 12; 
+                setMainTextStyle(doc); 
+                doc.setFontSize(7); 
                 doc.text("• Apabila terdapat perbedaan dengan catatan Saudara, harap menghubungi kami selambat-lambatnya 14 hari sejak diterimanya rekening koran ini.", 40, yPos);
                 yPos += 9;
                 setSubTextStyle(doc);
@@ -1509,21 +1493,35 @@
                 
                 // --- [AKHIR BAGIAN SUMMARY] ---
 
-                // Panggil fungsi watermark SETELAH autoTable selesai
                 if (typeof doc.putTotalPages === 'function') {
                     doc.putTotalPages("{totalPages}");
                 }
                 
-                // Panggil fungsi watermark di akhir sebelum menyimpan
                 addWatermark(doc); 
 
-                // 11. Simpan PDF
-                doc.save(`eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}.pdf`);
+                // 11. 🚀 PERUBAHAN UTAMA: Kirim ke Android jika ada 🚀
+                const fileName = `eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}.pdf`;
+
+                if (window.Android && typeof window.Android.savePdf === 'function') {
+                    // Jika jembatan "Android" dan fungsi "savePdf" ada...
+                    
+                    // 1. Ubah PDF menjadi string Base64
+                    const pdfData = doc.output('datauristring');
+                    
+                    // 2. Kirim data ke Android (Java)
+                    window.Android.savePdf(pdfData, fileName);
+                    
+                } else {
+                    // Jika tidak, gunakan metode download browser biasa
+                    // (Ini agar tetap berfungsi di Vercel/Chrome)
+                    doc.save(fileName);
+                }
 
             } catch (error) {
                 console.error("Gagal membuat e-Statement:", error);
                 alert("Terjadi kesalahan saat membuat PDF: " + error.message);
             } finally {
+                // Selalu reset tombol, apa pun yang terjadi
                 estatementBtn.disabled = false;
                 estatementBtn.textContent = 'Buat e-Statement';
             }
