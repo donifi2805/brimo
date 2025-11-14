@@ -182,9 +182,14 @@
                         const item = document.createElement('div');
                         item.className = 'mutasi-item';
                         
-                        let amountColor = '#333'; // default
-                        if (tx.amount && tx.amount.startsWith('+')) amountColor = 'green';
-                        if (tx.amount && tx.amount.startsWith('-')) amountColor = '#d90429';
+                        // --- PERUBAHAN WARNA MUTASI DISINI ---
+                        // Default adalah hitam (untuk pengurangan saldo)
+                        let amountColor = '#333'; 
+                        if (tx.amount && tx.amount.startsWith('+')) {
+                            // Hijau muda (untuk penambahan saldo)
+                            amountColor = '#28a745'; 
+                        }
+                        // --- AKHIR PERUBAHAN WARNA ---
 
                         item.innerHTML = `
                             <div class="mutasi-item-details">
@@ -210,6 +215,14 @@
     </script>
     
     <style>
+        /* --- PERUBAHAN 1: Mendefinisikan font kustom --- */
+        @font-face {
+            font-family: 'BRIku';
+            src: url('briku.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         /* Mengatur dasar halaman */
         body {
             margin: 0;
@@ -219,7 +232,8 @@
             align-items: center;
             min-height: 100vh;
             background-color: #333;
-            font-family: Arial, Helvetica, sans-serif;
+            /* --- PERUBAHAN 2: Menerapkan font kustom ke body --- */
+            font-family: 'BRIku', Arial, Helvetica, sans-serif;
         }
 
         /* --- CSS Layar Loading --- */
@@ -412,7 +426,8 @@
             color: white; 
             font-size: 0.8085rem; 
             font-weight: 700; 
-            font-family: Arial, Helvetica, sans-serif; 
+            /* --- PERUBAHAN 3: Menerapkan font kustom ke elemen ini --- */
+            font-family: 'BRIku', Arial, Helvetica, sans-serif; 
             padding: 0; 
             margin: 0; 
             width: 200px;
