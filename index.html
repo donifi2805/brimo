@@ -913,6 +913,8 @@
         </div>
     </div>
 
+    <img id="watermark-img" src="watermark.png" style="display: none; position: absolute;">
+
 
     <script>
         // --- VARIABEL GLOBAL UNTUK SALDO ---
@@ -1115,27 +1117,75 @@
                     doc.setGState(new doc.GState({ opacity: 1 })); 
                 }
                 
-                // --- FUNGSI HELPER UNTUK WATERMARK ---
+                // --- PERUBAHAN 3: FUNGSI WATERMARK BARU (MENGGUNAKAN GAMBAR) ---
                 function addWatermark(doc) {
+                    // 1. Ambil elemen gambar yang sudah di-preload
+                    const watermarkImg = document.getElementById('watermark-img');
+                    
+                    // 2. Cek jika gambar valid
+                    if (!watermarkImg || !watermarkImg.complete || watermarkImg.naturalWidth === 0) {
+                        console.error("Watermark image not loaded, falling back to text.");
+                        // Fallback ke watermark teks (LOGIKA LAMA JIKA GAMBAR GAGAL)
+                        const totalPagesFallback = doc.internal.getNumberOfPages();
+                        for (let i = 1; i <= totalPagesFallback; i++) {
+                            doc.setPage(i); 
+                            doc.saveGraphicsState();
+                            doc.setGState(new doc.GState({ opacity: 0.08 })); 
+                            doc.setTextColor(1, 110, 195); 
+                            doc.setFont('helvetica', 'bold');
+                            doc.setFontSize(100); 
+                            const pw = doc.internal.pageSize.width;
+                            const ph = doc.internal.pageSize.height;
+                            for (let y = 0; y < ph; y += 150) {
+                                for (let x = 0; x < pw; x += 250) {
+                                    doc.text("BRI", x, y, { angle: -45 }); 
+                                }
+                            }
+                            doc.restoreGraphicsState();
+                        }
+                        return; // Selesai
+                    }
+
+                    // 3. Tentukan ukuran & spasi watermark di PDF (dalam 'pt')
+                    // Sesuaikan angka ini untuk mengubah ukuran dan kepadatan watermark
+                    const imgWidth = 150; // Lebar gambar di PDF
+                    const imgHeight = 150; // Tinggi gambar di PDF (asumsi rasio 1:1)
+
+                    const xSpacing = 200; // Jarak horizontal antar gambar
+                    const ySpacing = 180; // Jarak vertikal antar gambar
+
                     const totalPages = doc.internal.getNumberOfPages();
                     for (let i = 1; i <= totalPages; i++) {
                         doc.setPage(i); 
                         doc.saveGraphicsState();
+                        
+                        // Atur transparansi untuk gambar
                         doc.setGState(new doc.GState({ opacity: 0.08 })); 
-                        doc.setTextColor(1, 110, 195); 
-                        doc.setFont('helvetica', 'bold');
-                        doc.setFontSize(100); 
                         
                         const pageWidth = doc.internal.pageSize.width;
                         const pageHeight = doc.internal.pageSize.height;
-                        for (let y = 0; y < pageHeight; y += 150) {
-                            for (let x = 0; x < pageWidth; x += 250) {
-                                doc.text("BRI", x, y, { angle: -45 }); 
+                        
+                        // Loop untuk tiling gambar
+                        // Mulai dari negatif agar pola menutupi seluruh halaman
+                        for (let y = -imgHeight/2; y < pageHeight; y += ySpacing) {
+                            for (let x = -imgWidth/2; x < pageWidth; x += xSpacing) {
+                                doc.addImage(
+                                    watermarkImg, 
+                                    'PNG', 
+                                    x, 
+                                    y, 
+                                    imgWidth, 
+                                    imgHeight,
+                                    undefined, // alias
+                                    'FAST'   // compression
+                                    // Tidak perlu rotasi, karena 'watermark.png' Anda sudah miring
+                                );
                             }
                         }
                         doc.restoreGraphicsState();
                     }
                 }
+                // --- AKHIR PERUBAHAN FUNGSI WATERMARK ---
                 
                 // 2. Ambil data global
                 if (!window.loggedInUserData || !window.allTransactions) {
@@ -1557,7 +1607,8 @@
         const otherAssets = [
             'login.jpg',
             'baground.jpg', 'mata.png', 'mata1.png', 
-            'home.png', 'mutasi.png'
+            'home.png', 'mutasi.png',
+            'watermark.png' // <-- PERUBAHAN 2: Menambahkan watermark ke preload
         ];
         const assetsToPreload = bgImages.concat(otherAssets);
 
