@@ -182,9 +182,14 @@
                         const item = document.createElement('div');
                         item.className = 'mutasi-item';
                         
-                        let amountColor = '#333'; // default
-                        if (tx.amount && tx.amount.startsWith('+')) amountColor = 'green';
-                        if (tx.amount && tx.amount.startsWith('-')) amountColor = '#d90429';
+                        // --- PERUBAHAN WARNA MUTASI DISINI ---
+                        // Default adalah hitam (untuk pengurangan saldo)
+                        let amountColor = '#333'; 
+                        if (tx.amount && tx.amount.startsWith('+')) {
+                            // Hijau muda (untuk penambahan saldo)
+                            amountColor = '#28a745'; 
+                        }
+                        // --- AKHIR PERUBAHAN WARNA ---
 
                         item.innerHTML = `
                             <div class="mutasi-item-details">
@@ -210,6 +215,14 @@
     </script>
     
     <style>
+        /* --- PERUBAHAN 1: Mendefinisikan font kustom --- */
+        @font-face {
+            font-family: 'BRIku';
+            src: url('briku.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
         /* Mengatur dasar halaman */
         body {
             margin: 0;
@@ -219,7 +232,8 @@
             align-items: center;
             min-height: 100vh;
             background-color: #333;
-            font-family: Arial, Helvetica, sans-serif;
+            /* --- PERUBAHAN 2: Menerapkan font kustom ke body --- */
+            font-family: 'BRIku', Arial, Helvetica, sans-serif;
         }
 
         /* --- CSS Layar Loading --- */
@@ -255,75 +269,148 @@
             transition: opacity 0.5s ease-in-out; /* Transisi fade */
         }
         
+        /* DIUBAH: Posisi Tombol "Login" ke tengah bawah */
         #welcome-button {
             position: absolute;
-            bottom: 20px;
-            right: 50px; /* Tombol digeser 5px ke kanan */
-            padding: 6px 12px; 
-            border-radius: 0px; 
-            font-size: 0.75rem; 
-            background-color: #ffffff; 
-            color: #016EC3; 
+            bottom: 103px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            
+            /* --- PERUBAHAN: Menggunakan gambar login2.jpg --- */
+            padding: 0; 
+            background-image: url('login2.jpg'); /* <-- INI ADALAH KODE YANG BENAR */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
             border: none;
-            font-weight: 600; 
+            width: 375px; /* Lebar disesuaikan agar pas */
+            height: 73px; /* Tinggi disesuaikan (rasio aspek 776x118) */
+            /* --- Akhir Perubahan --- */
+            
             cursor: pointer;
             box-shadow: none; 
-            transition: background-color 0.2s;
+            transition: opacity 0.2s; /* Diubah dari color ke opacity */
             z-index: 2001; 
         }
         #welcome-button:hover {
-            background-color: #f0f0f0; 
+            /* color: #f0f0f0; */ /* Teks dihapus */
+            opacity: 0.9;
         }
 
-        /* --- CSS Layar Login --- */
+        /* --- CSS Layar Login (DIUBAH MENJADI MODAL) --- */
+
+        /* BARU: Wrapper/Overlay untuk modal */
+        #login-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.4); 
+            display: none; 
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        #login-modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        
+        /* DIUBAH: #login-screen sekarang menjadi konten modal */
         #login-screen {
             width: 390px;
-            height: 844px;
             position: relative;
             overflow: hidden; 
-            background-image: url('login.jpg');
-            background-size: 100% auto;
-            background-position: top center;
-            background-repeat: no-repeat;
-            background-color: #ffffff;
-            display: none; /* Ditampilkan oleh welcome button */
+            background-color: #f0f2f5; 
+            display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start;
+            
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            transform: translateY(100%); 
+            transition: transform 0.3s ease-out;
+            padding-bottom: 15px; 
         }
         
+        #login-modal-overlay.show #login-screen {
+            transform: translateY(0); 
+        }
+        
+        /* DIUBAH: Header dibuat lebih padat */
+        .login-header-bar {
+            position: relative;
+            text-align: center;
+            padding: 30px 20px 15px 20px; 
+            background-color: #f0f2f5; 
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+        }
+        
+        /* DIUBAH: Posisi tombol batalkan disesuaikan */
+        #cancel-login-btn {
+            position: absolute;
+            left: 24px;
+            top: 30px; 
+            font-size: 1rem;
+            color: #016EC3;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .login-header-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        /* DIUBAH: Kontainer form dibuat lebih padat */
         .login-form-container {
-            padding: 24px;
+            padding: 20px 20px 10px 20px; 
             position: relative;
             z-index: 2;
-            top: 50px; 
+            top: 0; 
+            margin-top: 0; 
         }
         
+        /* DIUBAH: Grup input dibuat lebih ramping */
         .input-group {
             display: flex;
             align-items: center;
-            padding: 16px;
+            padding: 12px 16px; 
             position: relative;
-            left: 10px; 
-            background-color: transparent; 
+            left: 0; 
+            background-color: #ffffff; 
             border-radius: 8px;
             box-shadow: none; 
+            border: 1px solid #ddd; 
         }
         
-        /* --- PERUBAHAN 1 DI SINI --- */
+        .input-icon {
+            margin-right: 12px;
+            flex-shrink: 0;
+            fill: #888;
+        }
+        
         #username-group {
-            margin-bottom: 5px; 
-            bottom: 0px; /* Diubah dari 10px -> 0px (Geser 10px ke Bawah) */
+            margin-bottom: 12px; 
+            bottom: 0; 
         }
 
         #password-group {
-            bottom: 5px;
+            bottom: 0;
+            margin-bottom: 12px; 
         }
 
-        /* --- PERUBAHAN 2 DI SINI --- */
         .input-group input {
             border: none;
             outline: none;
-            font-size: 1.04rem; /* Diperkecil 20% (dari 1.3rem) */
+            font-size: 1rem; 
             flex: 1;
             color: #333;
             -webkit-appearance: none;
@@ -338,13 +425,15 @@
             cursor: pointer;
             fill: #aaa;
             position: relative; 
-            right: 50px; 
+            right: 0; 
+            margin-left: 10px; 
         }
         
         #eye-icon-closed {
             display: none;
         }
         
+        /* DIUBAH: Tombol login dibuat lebih padat */
         #login-button {
             width: 100%;
             padding: 15px;
@@ -355,10 +444,10 @@
             font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
-            margin-top: 15px;
+            margin-top: 12px; 
             transition: background-color 0.2s;
             position: relative;
-            top: 18px; 
+            top: 0; 
         }
         #login-button:hover {
             background-color: #0161AC; 
@@ -366,6 +455,17 @@
         #login-button:disabled {
             background-color: #ccc;
             cursor: wait;
+        }
+        
+        /* DIUBAH: Link lupa password dibuat lebih padat */
+        .forgot-password-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px; 
+            color: #016EC3;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
         }
         /* --- AKHIR CSS Layar Login --- */
 
@@ -412,14 +512,16 @@
             color: white; 
             font-size: 0.8085rem; 
             font-weight: 700; 
-            font-family: Arial, Helvetica, sans-serif; 
+            /* --- PERUBAHAN 3: Menerapkan font kustom ke elemen ini --- */
+            font-family: 'BRIku', Arial, Helvetica, sans-serif; 
             padding: 0; 
             margin: 0; 
             width: 200px;
             -webkit-tap-highlight-color: transparent;
         }
         
-        .balance-section { margin-top: 25px; }
+        /* --- PERUBAHAN: margin-top digeser +7px (25->32) dan margin-left +5px --- */
+        .balance-section { margin-top: 32px; margin-left: 5px; }
         .balance-label { font-size: 0.9rem; opacity: 0.8; height: 1.2em; }
         .balance-display { display: flex; align-items: center; gap: 3px; margin-top: 5px; }
         .balance-currency { font-size: 1.2285rem; font-weight: 600; margin-top: 2px; margin-left: 9px; }
@@ -771,25 +873,41 @@
     <div id="loading-screen"></div>
 
     <div id="welcome-screen">
-        <button id="welcome-button">Masuk</button>
+        <button id="welcome-button"></button>
     </div>
 
-    <div id="login-screen">
-        <div class="login-form-container">
+    <div id="login-modal-overlay">
+        <div id="login-screen">
             
-            <div class="input-group" id="username-group">
-                <input type="text" id="login-username" placeholder="Username">
+            <div class="login-header-bar">
+                <span id="cancel-login-btn">Batalkan</span>
+                <span class="login-header-title">Login</span>
             </div>
-            <div class="input-group" id="password-group">
-                <input type="password" id="login-password" placeholder="Password">
+            
+            <div class="login-form-container">
                 
-                <span id="toggle-password" class="eye-icon">
-                    <svg id="eye-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    <svg id="eye-icon-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94C16.236 19.162 14.176 19.88 12 19.88C5.01 19.88 1 12 1 12C2.28 9.33 4.14 7.1 6.36 5.61M21.64 14.39C22.46 13.31 23 12 23 12C23 12 18.99 4.12 12 4.12C10.83 4.12 9.72 4.3 8.67 4.63M12 9C10.3431 9 9 10.3431 9 12C9 12.331 9.06245 12.648 9.17641 12.942M15 12C15 13.6569 13.6569 15 12 15C11.562 15 11.144 14.919 10.758 14.774" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 1L23 23" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </span>
+                <div class="input-group" id="username-group">
+                    <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#888" viewBox="0 0 16 16">
+                        <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664z"/>
+                    </svg>
+                    <input type="text" id="login-username" placeholder="Username">
+                </div>
+                <div class="input-group" id="password-group">
+                    <svg class="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="#888" viewBox="0 0 16 16">
+                        <path d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2m3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2M5 9h6v5H5z"/>
+                    </svg>
+                    <input type="password" id="login-password" placeholder="Password">
+                    
+                    <span id="toggle-password" class="eye-icon">
+                        <svg id="eye-icon-open" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 12C1 12 5 4 12 4C19 4 23 12 23 12C23 12 19 20 12 20C5 20 1 12 1 12Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        <svg id="eye-icon-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94C16.236 19.162 14.176 19.88 12 19.88C5.01 19.88 1 12 1 12C2.28 9.33 4.14 7.1 6.36 5.61M21.64 14.39C22.46 13.31 23 12 23 12C23 12 18.99 4.12 12 4.12C10.83 4.12 9.72 4.3 8.67 4.63M12 9C10.3431 9 9 10.3431 9 12C9 12.331 9.06245 12.648 9.17641 12.942M15 12C15 13.6569 13.6569 15 12 15C11.562 15 11.144 14.919 10.758 14.774" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M1 1L23 23" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </span>
+                </div>
+                
+                <button id="login-button">Login</button>
+                
+                <a href="#" class="forgot-password-link">Lupa Username/Password?</a>
             </div>
-            
-            <button id="login-button">Login</button>
         </div>
     </div>
 
@@ -900,6 +1018,8 @@
 
 
     <script>
+        const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABKCAYAAAC54EJUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAd8SURBVHhe7d3/S9tnHcfx99mZCSkDy0Ipy67KkLMMY6C3sDNCm6E/lIaMdFhGxkaFtKxoY1oYmXVkdGFjGxtJExMvbRjREi2sYVu0sDGsDGuLxrJpXlpGVMheqmVZeSj9wdm+u+eeO3fuueye8/x8Pj/g+31/nvO53Lp8n+c57/O853NLY2NjW7Ff+2i9NvgD/9/13u/45pL6w7c+sP7iW//5+sN//uvrD/78l9cf/+NfrT/8/i+tP/zJz60//MlPrT/8yU+tP/rRL68//Kkvrd/73vfWD3/4w+sP//jH1w9/+MPriz/++esP//jH1x/++MetP/zxz1p//ONfWn/4459af/jTX1p/+NNfWn/4k59af/jTn1p/+NNfWn/0o+9af/Sj71p/+NNfWn/0o+9af/Sjb1p/+NNfWn/0o29a//+t71p/9KNvWn/4019a//9t71t/9KNvWn/4019a//+/vW/90Y++af3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/eE//tT6wz/+qfWHf/xT6w//+KfWH/7xT60//ONPrT/840+tP/z5z60//PnPrT/8+c+tP/jFL60/+MVL1q985SvWH/7wh9ZPf/rT6g9/+MPqpz/9qfXDn/70+uEPf2j94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD3j94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3vSgS9A/f+aEPfWj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD3G1kZ/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3dsC/AGrT3n3W0M1NAAAAAElFTkSuQmCC";
+
         // --- VARIABEL GLOBAL UNTUK SALDO ---
         window.currentCalculatedBalanceString = "0"; 
         
@@ -1211,12 +1331,22 @@
                 // --- Logo, Judul Kanan ---
                 doc.setFont('helvetica', 'bold');
                 doc.setFontSize(18);
-                doc.setTextColor(1, 110, 195);
-                doc.text("BRI", 40, 50);
-                doc.setTextColor(0, 0, 0); 
+                // doc.setTextColor(1, 110, 195); // Dihapus, diganti gambar
+                // doc.text("BRI", 40, 50); // Dihapus, diganti gambar
+                
+                // PERUBAHAN: Mengganti teks "BRI" dengan gambar logo Base64
+                // Ukuran 73x18 mempertahankan rasio aspek logo (300x74) dan cocok dengan ukuran font 18
+                doc.addImage(logoBase64, 'PNG', 40, 38, 73, 18); 
+                
+                // PERUBAHAN: Mengatur warna biru untuk teks "Melayani..."
+                doc.setTextColor(1, 110, 195); 
                 doc.setFont('helvetica', 'normal');
                 doc.setFontSize(8);
                 doc.text("Melayani Dengan Setulus Hati", 40, 62);
+
+                // PERUBAHAN: Reset warna ke hitam agar tidak mempengaruhi teks lain
+                doc.setTextColor(0, 0, 0); 
+
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.text("LAPORAN TRANSAKSI FINANSIAL", 380, 40);
@@ -1534,16 +1664,21 @@
         const loadingScreen = document.getElementById('loading-screen');
         const welcomeScreen = document.getElementById('welcome-screen');
         const welcomeBtn = document.getElementById('welcome-button');
+        
+        const loginModalOverlay = document.getElementById('login-modal-overlay');
         const loginScreen = document.getElementById('login-screen'); 
+        
         const appContainerOnLoad = document.querySelector('.app-container');
         const floatingBtnOnLoad = document.getElementById('floating-widget-button');
 
-        const bgImages = ['1.jpg', '2.jpg', '3.jpg', '4.jpg'];
+        // DIUBAH: Hanya 1.jpg
+        const bgImages = ['1.jpg']; 
         const otherAssets = [
-            'login.jpg',
+            // 'login.jpg', // login.jpg sudah tidak dipakai
             'baground.jpg', 'mata.png', 'mata1.png', 
             'home.png', 'mutasi.png'
         ];
+        // DIUBAH: Hanya preload 1.jpg dari bgImages
         const assetsToPreload = bgImages.concat(otherAssets);
 
         function preloadImages(urls) {
@@ -1560,6 +1695,8 @@
 
         const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+        let slideInterval; 
+
         async function startApp() {
             const preloadPromise = preloadImages(assetsToPreload);
             const minimumDelayPromise = delay(4500); 
@@ -1571,56 +1708,57 @@
             startWelcomeScreenLogic();
         }
 
-        // --- PERUBAHAN LOGIKA SLIDESHOW DI SINI ---
         function startWelcomeScreenLogic() {
             let currentBgIndex = 0;
-            let slideInterval; 
-            let isChanging = false; // Flag untuk mencegah transisi bentrok
+            let isChanging = false; 
 
             function changeBackground() {
-                if (isChanging) return; // Jangan jalankan jika sedang transisi
+                // DIUBAH: Jika hanya ada 1 gambar, jangan lakukan apa-apa
+                if (bgImages.length <= 1) return; 
+                
+                if (isChanging) return; 
                 isChanging = true;
 
-                // 1. Fade out
                 welcomeScreen.style.opacity = 0;
 
-                // 2. Tunggu transisi fade-out selesai (500ms)
                 setTimeout(() => {
-                    // 3. Ganti gambar
                     currentBgIndex = (currentBgIndex + 1) % bgImages.length;
                     welcomeScreen.style.backgroundImage = `url(${bgImages[currentBgIndex]})`;
                     
-                    // 4. Fade in
                     welcomeScreen.style.opacity = 1;
 
-                    // 5. Selesai transisi (setelah 500ms lagi agar tidak bentrok)
                     setTimeout(() => {
                         isChanging = false; 
-                    }, 500); // Durasi fade-in
+                    }, 500); 
                     
-                }, 500); // HARUS SAMA dengan durasi transisi CSS (0.5s)
+                }, 500); 
             }
 
             function startSlideShow() {
                 clearInterval(slideInterval);
-                slideInterval = setInterval(changeBackground, 15000); // 15 detik
+                // DIUBAH: Hanya jalankan interval jika gambar > 1
+                if (bgImages.length > 1) {
+                    slideInterval = setInterval(changeBackground, 15000);
+                }
             }
             
-            // Set gambar pertama & opacity
+            // DIUBAH: Set gambar pertama (atau satu-satunya)
             welcomeScreen.style.backgroundImage = `url(${bgImages[0]})`;
-            welcomeScreen.style.opacity = 1; // Pastikan opacity 1 di awal
-            startSlideShow();
+            welcomeScreen.style.opacity = 1; 
+            startSlideShow(); // Fungsi ini sekarang aman
 
             welcomeScreen.addEventListener('click', () => {
                 changeBackground(); 
-                startSlideShow(); // Reset interval
+                startSlideShow(); 
             });
             
             welcomeBtn.addEventListener('click', (e) => {
                 e.stopPropagation(); 
-                clearInterval(slideInterval);
-                welcomeScreen.style.display = 'none'; 
-                loginScreen.style.display = 'flex'; 
+                
+                loginModalOverlay.style.display = 'flex';
+                setTimeout(() => {
+                    loginModalOverlay.classList.add('show');
+                }, 10); 
             });
         }
         // --- AKHIR PERUBAHAN SLIDESHOW ---
@@ -1629,7 +1767,7 @@
         startApp();
         
 
-        // --- Skrip Login (Tidak berubah) ---
+        // --- Skrip Login (Event Listener) ---
         const loginUsernameEl = document.getElementById('login-username');
         const loginPasswordEl = document.getElementById('login-password');
         const loginButton = document.getElementById('login-button');
@@ -1665,9 +1803,18 @@
                 const result = await window.initFirebaseAndLogin(username, password);
 
                 if (result.success) {
-                    loginScreen.style.display = 'none';
-                    appContainerOnLoad.style.display = 'block'; 
-                    floatingBtnOnLoad.style.display = 'flex';
+                    
+                    loginModalOverlay.classList.remove('show'); 
+                    clearInterval(slideInterval); 
+                    
+                    setTimeout(() => {
+                        loginModalOverlay.style.display = 'none';
+                        welcomeScreen.style.display = 'none'; 
+                        
+                        appContainerOnLoad.style.display = 'block'; 
+                        floatingBtnOnLoad.style.display = 'flex';
+                    }, 300); 
+
                 } else {
                     alert(result.message);
                     loginButton.disabled = false;
@@ -1679,6 +1826,15 @@
                 loginButton.disabled = false;
                 loginButton.textContent = 'Login';
             }
+        });
+        
+        const cancelLoginBtn = document.getElementById('cancel-login-btn');
+        cancelLoginBtn.addEventListener('click', () => {
+            
+            loginModalOverlay.classList.remove('show');
+            setTimeout(() => {
+                loginModalOverlay.style.display = 'none';
+            }, 300); 
         });
 
 
@@ -1700,7 +1856,6 @@
                 eyeIcon.src = 'mata1.png'; 
             }
         }
-        // Expose ke window agar bisa dipanggil modul
         window.updateBalanceView = updateBalanceView; 
 
         toggleBalanceBtn.addEventListener('click', () => {
