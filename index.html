@@ -272,22 +272,30 @@
         /* DIUBAH: Posisi Tombol "Login" ke tengah bawah */
         #welcome-button {
             position: absolute;
-            bottom: 103px; /* DIUBAH: dari 30px (20px ke atas) */
+            bottom: 103px; 
             left: 44%; 
             transform: translateX(-50%); 
+            
+            /* --- PERUBAHAN: Menggunakan gambar login2.jpg --- */
             padding: 0; 
-            font-size: 1.425rem; 
-            background-color: transparent; 
-            color: #ffffff; 
+            background-image: url('login2.jpg'); /* <-- INI ADALAH KODE YANG BENAR */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: transparent;
             border: none;
-            font-weight: 600; 
+            width: 280px; /* Lebar disesuaikan agar pas */
+            height: 43px; /* Tinggi disesuaikan (rasio aspek 776x118) */
+            /* --- Akhir Perubahan --- */
+            
             cursor: pointer;
             box-shadow: none; 
-            transition: color 0.2s; 
+            transition: opacity 0.2s; /* Diubah dari color ke opacity */
             z-index: 2001; 
         }
         #welcome-button:hover {
-            color: #f0f0f0; 
+            /* color: #f0f0f0; */ /* Teks dihapus */
+            opacity: 0.9;
         }
 
         /* --- CSS Layar Login (DIUBAH MENJADI MODAL) --- */
@@ -512,7 +520,8 @@
             -webkit-tap-highlight-color: transparent;
         }
         
-        .balance-section { margin-top: 25px; }
+        /* --- PERUBAHAN: margin-top digeser +7px (25->32) dan margin-left +5px --- */
+        .balance-section { margin-top: 32px; margin-left: 5px; }
         .balance-label { font-size: 0.9rem; opacity: 0.8; height: 1.2em; }
         .balance-display { display: flex; align-items: center; gap: 3px; margin-top: 5px; }
         .balance-currency { font-size: 1.2285rem; font-weight: 600; margin-top: 2px; margin-left: 9px; }
@@ -864,7 +873,7 @@
     <div id="loading-screen"></div>
 
     <div id="welcome-screen">
-        <button id="welcome-button">Login</button>
+        <button id="welcome-button"></button>
     </div>
 
     <div id="login-modal-overlay">
@@ -1009,7 +1018,7 @@
 
 
     <script>
-        const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABKCAYAAAC54EJUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAd8SURBVHhe7d3/S9tnHcfx99mZCSkDy0Ipy67KkLMMY6C3sDNCm6E/lIaMdFhGxkaFtKxoY1oYmXVkdGFjGxtJExMvbRjREi2sYVu0sDGsDGuLxrJpXlpGVMheqmVZeSj9wdm+u+eeO3fuueye8/x8Pj/g+31/nvO53Lp8n+c57/O853NLY2NjW7Ff+2i9NvgD/9/13u/45pL6w7c+sP7iW//5+sN//uvrD/78l9cf/+NfrT/8/i+tP/zJz60//MlPrT/8yU+tP/rRL68//Kkvrd/73vfWD3/4w+sP//jH1w9/+MPriz/++esP//jH1x/++MetP/zxz1p//ONfWn/4459af/jTX1p/+NNfWn/4k59af/jTn1p/+NNfWn/0o+9af/Sj71p/+NNfWn/0o+9af/Sjb1p/+NNfWn/0o29a//+t71p/9KNvWn/4019a//9t71t/9KNvWn/4019a//+/vW/90Y++af3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/eE//tT6wz/+qfWHf/xT6w//+KfWH/7xT60//ONPrT/840+tP/z5z60//PnPrT/8+c+tP/jFL60/+MVL1q985SvWH/7wh9ZPf/rT6g9/+MPqpz/9qfXDn/70+uEPf2j94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3vSgS9A/f+aEPfWj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3dsC/AGrT3n3W0M1NAAAAAElFTkSuQmCC";
+        const logoBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAABKCAYAAAC54EJUAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAd8SURBVHhe7d3/S9tnHcfx99mZCSkDy0Ipy67KkLMMY6C3sDNCm6E/lIaMdFhGxkaFtKxoY1oYmXVkdGFjGxtJExMvbRjREi2sYVu0sDGsDGuLxrJpXlpGVMheqmVZeSj9wdm+u+eeO3fuueye8/x8Pj/g+31/nvO53Lp8n+c57/O853NLY2NjW7Ff+2i9NvgD/9/13u/45pL6w7c+sP7iW//5+sN//uvrD/78l9cf/+NfrT/8/i+tP/zJz60//MlPrT/8yU+tP/rRL68//Kkvrd/73vfWD3/4w+sP//jH1w9/+MPriz/++esP//jH1x/++MetP/zxz1p//ONfWn/4459af/jTX1p/+NNfWn/4k59af/jTn1p/+NNfWn/0o+9af/Sj71p/+NNfWn/0o+9af/Sjb1p/+NNfWn/0o29a//+t71p/9KNvWn/4019a//9t71t/9KNvWn/4019a//+/vW/90Y++af3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/dG3vmf90be+Z/3hT39q/eE//tT6wz/+qfWHf/xT6w//+KfWH/7xT60//ONPrT/840+tP/z5z60//PnPrT/8+c+tP/jFL60/+MVL1q985SvWH/7wh9ZPf/rT6g9/+MPqpz/9qfXDn/70+uEPf2j94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD3j94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3vSgS9A/f+aEPfWj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD3G1kZ/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3hD39o/dGPfmj94Q9/aP3dsC/AGrT3n3W0M1NAAAAAElFTkSuQmCC";
 
         // --- VARIABEL GLOBAL UNTUK SALDO ---
         window.currentCalculatedBalanceString = "0"; 
