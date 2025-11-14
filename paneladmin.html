@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin</title>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #016EC3;
+            --secondary-color: #f0f2f5;
+            --danger-color: #d90429;
+            --dark-gray: #333;
+            --border-color: #ddd;
+            --warning-color: #ffc107;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background-color: var(--secondary-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        #login-screen { padding: 40px; }
+        h2 {
+            text-align: center;
+            color: var(--dark-gray);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        h3 {
+            color: var(--dark-gray);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        #admin-panel { display: none; padding: 20px; }
+        #tx-management-view { display: none; }
+        #tx-manager-header { font-size: 1.2rem; font-weight: 600; color: var(--primary-color); }
+        form {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        form .form-group { display: flex; flex-direction: column; }
+        form .full-width { grid-column: 1 / -1; }
+        form label {
+            font-weight: 600;
+            color: #555;
+            font-size: 0.9rem;
+            margin-bottom: 4px;
+        }
+        
+        /* *** PERUBAHAN DI SINI *** */
+        /* Styling untuk input mudah (date, time) ditambahkan kembali */
+        form input[type="text"],
+        form input[type="password"],
+        form input[type="number"],
+        form input[type="date"],
+        form input[type="time"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            padding: 12px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            grid-column: 1 / -1;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #015a9e; }
+        button:disabled { background-color: #ccc; cursor: wait; }
+        button.btn-danger { background-color: var(--danger-color); }
+        button.btn-danger:hover { background-color: #b00321; }
+        button.btn-secondary { background-color: #6c757d; }
+        button.btn-secondary:hover { background-color: #5a6268; }
+        button.btn-warning { background-color: var(--warning-color); color: #333; }
+        button.btn-warning:hover { background-color: #ffca2c; }
+
+        .list-container {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+        }
+        .list-item {
+            display: flex;
+            flex-direction: column; 
+            align-items: stretch; 
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .list-item:last-child { border-bottom: none; }
+        .item-details { font-size: 0.9rem; color: #333; flex: 1; min-width: 0; }
+        .item-details span { 
+            display: block; 
+            overflow-wrap: break-word; 
+        }
+        .item-details .title { font-weight: 600; font-size: 1rem; }
+        .item-details .subtitle, .item-details .time { font-size: 0.8rem; color: #777; }
+        .item-details .amount { font-weight: 600; }
+        .item-actions { 
+            display: flex; 
+            flex-shrink: 0; 
+            gap: 8px; 
+            width: 100%; 
+            margin-top: 12px; 
+        }
+        .item-actions button, #back-to-users-btn {
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            grid-column: auto;
+            margin-top: 0;
+            flex: 1; 
+        }
+        
+        .form-button-group {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .form-button-group button {
+            margin-top: 0;
+            flex: 1;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="login-screen">
+            <h2>Panel Admin</h2>
+            <form id="admin-login-form">
+                <div class="form-group full-width">
+                    <label for="admin-username">Username Admin:</label>
+                    <input type="text" id="admin-username" value="admin" required>
+                </div>
+                <div class="form-group full-width">
+                    <label for="admin-password">Password Admin:</label>
+                    <input type="password" id="admin-password" value="admin" required>
+                </div>
+                <button type="submit" id="admin-login-btn">Login</button>
+            </form>
+        </div>
+
+        <div id="admin-panel">
+            
+            <div id="user-management-view">
+                <h2>Manajemen Pengguna Aplikasi</h2>
+                
+                <h3 id="user-form-title">Buat Pengguna Baru</h3>
+                <form id="create-user-form">
+                    <div class="form-group full-width">
+                        <label for="login-username">Login Username (akan jadi Nama Profil):</label>
+                        <input type="text" id="login-username" placeholder="cth: donitata1717" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="login-password">Login Password:</label>
+                        <input type="text" id="login-password" placeholder="cth: wasalamL050" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="rekening-number">Nomor Rekening:</label>
+                        <input type="text" id="rekening-number" placeholder="cth: 5387 0102..." required>
+                    </div>
+                     <div class="form-group full-width">
+                        <label for="saldo-awal">Saldo Awal (Angka):</label>
+                        <input type="number" id="saldo-awal" placeholder="cth: 500000 (masukkan angka saja)" required>
+                    </div>
+                    
+                    <div class="form-button-group">
+                        <button type="submit" id="create-user-btn">Buat Pengguna</button>
+                        <button type="button" id="cancel-edit-user-btn" class="btn-secondary hidden">Batal Edit</button>
+                    </div>
+                </form>
+
+                <h3>Daftar Pengguna Aplikasi</h3>
+                <div id="user-list-container" class="list-container">
+                    <p style="text-align: center; padding: 20px; color: #888;">Memuat pengguna...</p>
+                </div>
+            </div>
+
+            <div id="tx-management-view">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <h2 id="tx-manager-header">Manajemen Transaksi</h2>
+                    <button id="back-to-users-btn" class="btn-secondary">Kembali ke Daftar Pengguna</button>
+                </div>
+
+                <h3 id="tx-form-title">Tambah Transaksi Baru</h3>
+                <form id="tx-form">
+                    
+                    <div class="form-group">
+                        <label for="tx-date">Tanggal Transaksi:</label>
+                        <input type="date" id="tx-date" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="tx-time">Waktu Transaksi:</label>
+                        <input type="time" id="tx-time" required>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="tx-desc">Deskripsi:</label>
+                        <input type="text" id="tx-desc" placeholder="cth: Beli Token PLN 50181090155" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tx-via">Via (Teks):</label>
+                        <input type="text" id="tx-via" placeholder="cth: via BRImo" required>
+                    </div>
+                     <div class="form-group">
+                        <label for="tx-amount-number">Jumlah (Angka):</label>
+                        <input type="number" id="tx-amount-number" placeholder="cth: -100000 (keluar) atau 50000 (masuk)" required>
+                    </div>
+                    
+                    <div class="form-button-group">
+                        <button type="submit" id="add-tx-btn">Tambah Transaksi</button>
+                        <button type="button" id="cancel-edit-tx-btn" class="btn-secondary hidden">Batal Edit</button>
+                    </div>
+                </form>
+
+                <h3>Daftar Transaksi Pengguna</h3>
+                <div id="transaction-list-container" class="list-container">
+                    </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- KONFIGURASI ADMIN ---
+        const ADMIN_USERNAME = "admin";
+        const ADMIN_PASSWORD = "admin";
+        
+        // --- KONFIGURASI FIREBASE ---
+        const firebaseConfig = {
+          apiKey: "AIzaSyD2bI8R7u6KZW3gB_Pb0TVmDHkxG3dqu9A",
+          authDomain: "brimoku-e49d0.firebaseapp.com",
+          projectId: "brimoku-e49d0",
+          storageBucket: "brimoku-e49d0.firebasestorage.app",
+          messagingSenderId: "1093618052793",
+          appId: "1:1093618052793:web:d2a804ff78e2f4156bf568",
+          measurementId: "G-PLXZ3YB3KC"
+        };
+        const appId = firebaseConfig.projectId;
+
+        // --- Variabel Global ---
+        let db;
+        let appUsersCollectionRef;
+        let selectedUserId = null;
+        let unsubscribeTxListener = null;
+        let editingUserId = null; 
+        let editingTxId = null; 
+
+        // --- Referensi DOM ---
+        const loginScreen = document.getElementById('login-screen');
+        const adminPanel = document.getElementById('admin-panel');
+        const adminLoginForm = document.getElementById('admin-login-form');
+        const adminLoginBtn = document.getElementById('admin-login-btn');
+        
+        const userManagementView = document.getElementById('user-management-view');
+        const userFormTitle = document.getElementById('user-form-title');
+        const createUserForm = document.getElementById('create-user-form');
+        const createUserBtn = document.getElementById('create-user-btn');
+        const cancelEditUserBtn = document.getElementById('cancel-edit-user-btn');
+        const userListContainer = document.getElementById('user-list-container');
+        
+        const txManagementView = document.getElementById('tx-management-view');
+        const txManagerHeader = document.getElementById('tx-manager-header');
+        const backToUsersBtn = document.getElementById('back-to-users-btn');
+        const txFormTitle = document.getElementById('tx-form-title');
+        const txForm = document.getElementById('tx-form');
+        const addTxBtn = document.getElementById('add-tx-btn');
+        const cancelEditTxBtn = document.getElementById('cancel-edit-tx-btn');
+        const transactionListContainer = document.getElementById('transaction-list-container');
+        
+        // --- 1. LOGIN ADMIN ---
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                adminLoginBtn.disabled = true;
+                adminLoginBtn.textContent = 'Login Berhasil. Menghubungkan ke Firebase...';
+                await initFirebase();
+            } else {
+                alert("Username atau Password Admin salah!");
+            }
+        }
+
+        // --- 2. Inisialisasi Firebase ---
+        async function initFirebase() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                db = firebase.firestore();
+                await auth.signInAnonymously();
+                console.log("Admin: Autentikasi Anonim Berhasil.");
+                appUsersCollectionRef = db.collection("artifacts").doc(appId).collection("app_users");
+                loginScreen.style.display = 'none';
+                adminPanel.style.display = 'block';
+                listenForAppUsers();
+            } catch (error) {
+                console.error("Admin: Error inisialisasi Firebase:", error);
+                adminLoginBtn.textContent = 'Gagal terhubung ke Firebase. Coba lagi.';
+                adminLoginBtn.disabled = false;
+            }
+        }
+
+        // --- 3. MANAJEMEN PENGGUNA ---
+        // (Tidak ada perubahan di bagian ini, sama seperti sebelumnya)
+        async function handleCreateUserSubmit(e) {
+            e.preventDefault();
+            createUserBtn.disabled = true;
+            const loginUsername = document.getElementById('login-username').value;
+            const saldoAwalValue = parseInt(document.getElementById('saldo-awal').value, 10) || 0;
+            const data = {
+                login_username: loginUsername,
+                login_password: document.getElementById('login-password').value,
+                profile_username: loginUsername,
+                rekeningNumber: document.getElementById('rekening-number').value,
+                saldo_awal: saldoAwalValue 
+            };
+            try {
+                if (editingUserId) {
+                    createUserBtn.textContent = 'Menyimpan...';
+                    const userDocRef = appUsersCollectionRef.doc(editingUserId);
+                    await userDocRef.update(data); 
+                    console.log("Admin: Pengguna diperbarui:", editingUserId);
+                } else {
+                    createUserBtn.textContent = 'Membuat...';
+                    await appUsersCollectionRef.add(data);
+                    console.log("Admin: Pengguna baru dibuat.");
+                }
+                resetUserForm();
+            } catch (error) {
+                console.error("Admin: Error menyimpan pengguna:", error);
+                alert("Gagal menyimpan pengguna!");
+            }
+        }
+        async function handleEditUserClick(e) {
+            editingUserId = e.target.dataset.id;
+            try {
+                const userDocRef = appUsersCollectionRef.doc(editingUserId);
+                const docSnap = await userDocRef.get();
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    document.getElementById('login-username').value = data.login_username || '';
+                    document.getElementById('login-password').value = data.login_password || '';
+                    document.getElementById('rekening-number').value = data.rekeningNumber || '';
+                    document.getElementById('saldo-awal').value = data.saldo_awal || 0;
+                    userFormTitle.textContent = 'Edit Pengguna';
+                    createUserBtn.textContent = 'Simpan Perubahan';
+                    cancelEditUserBtn.classList.remove('hidden');
+                    window.scrollTo(0, 0); 
+                } else {
+                    editingUserId = null;
+                }
+            } catch (error) {
+                editingUserId = null;
+            }
+        }
+        function resetUserForm() {
+            editingUserId = null;
+            createUserForm.reset();
+            userFormTitle.textContent = 'Buat Pengguna Baru';
+            createUserBtn.textContent = 'Buat Pengguna';
+            createUserBtn.disabled = false;
+            cancelEditUserBtn.classList.add('hidden');
+        }
+        function listenForAppUsers() {
+            const q = appUsersCollectionRef.orderBy("login_username");
+            q.onSnapshot((querySnapshot) => {
+                if (querySnapshot.empty) {
+                    userListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: #888;">Belum ada pengguna aplikasi.</p>';
+                    return;
+                }
+                userListContainer.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const user = doc.data();
+                    const userId = doc.id;
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `
+                        <div class="item-details">
+                            <span class="title">${user.login_username}</span>
+                            <span class="subtitle">Rekening: ${user.rekeningNumber}</span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-warning btn-edit-user" data-id="${userId}">Edit</button>
+                            <button class="btn-secondary" data-id="${userId}" data-username="${user.login_username}">Kelola Transaksi</button>
+                            <button class="btn-danger btn-delete-user" data-id="${userId}">Hapus</button>
+                        </div>
+                    `;
+                    userListContainer.appendChild(item);
+                });
+                userListContainer.querySelectorAll('.btn-edit-user').forEach(btn => btn.addEventListener('click', handleEditUserClick));
+                userListContainer.querySelectorAll('.btn-secondary').forEach(btn => btn.addEventListener('click', handleManageUser));
+                userListContainer.querySelectorAll('.btn-danger').forEach(btn => btn.addEventListener('click', handleDeleteUser));
+            }, (error) => {
+                userListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Gagal memuat pengguna.</p>';
+            });
+        }
+        async function handleDeleteUser(e) {
+            const userId = e.target.dataset.id;
+            if (!confirm(`Yakin ingin menghapus pengguna ini (ID: ${userId})? Ini TIDAK BISA dibatalkan.`)) return;
+            e.target.disabled = true;
+            try {
+                await appUsersCollectionRef.doc(userId).delete();
+            } catch (error) {
+                alert("Gagal menghapus pengguna!");
+            }
+        }
+        // --- AKHIR BAGIAN MANAJEMEN PENGGUNA ---
+
+
+        // --- 4. MANAJEMEN TRANSAKSI (PER PENGGUNA) ---
+
+        function handleManageUser(e) {
+            selectedUserId = e.target.dataset.id;
+            const username = e.target.dataset.username;
+            txManagerHeader.textContent = `Mengelola Transaksi untuk: ${username}`;
+            userManagementView.style.display = 'none';
+            txManagementView.style.display = 'block';
+            listenForTransactions(selectedUserId);
+        }
+
+        function handleBackToUsers() {
+            if (unsubscribeTxListener) unsubscribeTxListener();
+            unsubscribeTxListener = null;
+            selectedUserId = null;
+            transactionListContainer.innerHTML = '';
+            resetTxForm(); 
+            txManagementView.style.display = 'none';
+            userManagementView.style.display = 'block';
+        }
+        
+        // Buat atau Update Transaksi
+        async function handleTxFormSubmit(e) {
+            e.preventDefault();
+            if (!selectedUserId) return;
+            addTxBtn.disabled = true;
+
+            // 1. Ambil nilai input mudah (cth: "2025-02-28" dan "21:37")
+            const dateInput = document.getElementById('tx-date').value;
+            const timeInput = document.getElementById('tx-time').value;
+
+            // 2. Konversi ke format teks yang dibutuhkan index.html
+            const formattedDate = formatDateToText(dateInput);
+            const formattedTime = formatTimeToText(timeInput);
+            
+            // 3. Ambil data angka
+            const amountNum = parseInt(document.getElementById('tx-amount-number').value, 10) || 0;
+            const formattedAmountStr = formatCurrencyString(amountNum);
+
+            // 4. Siapkan data untuk Firebase (menggunakan format teks)
+            const newTxData = {
+                date: formattedDate, // Cth: "28 Feb 2025"
+                time: formattedTime, // Cth: "21:37:05 WIB"
+                desc: document.getElementById('tx-desc').value,
+                via: document.getElementById('tx-via').value,
+                amount: formattedAmountStr, 
+                amount_number: amountNum     
+            };
+            
+            const txCollectionRef = appUsersCollectionRef.doc(selectedUserId).collection("transactions");
+
+            try {
+                if (editingTxId) {
+                    addTxBtn.textContent = 'Menyimpan...';
+                    await txCollectionRef.doc(editingTxId).update(newTxData); 
+                    console.log("Admin: Transaksi diperbarui:", editingTxId);
+                } else {
+                    addTxBtn.textContent = 'Menambahkan...';
+                    newTxData.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+                    await txCollectionRef.add(newTxData);
+                    console.log("Admin: Transaksi baru ditambahkan.");
+                }
+                resetTxForm(); 
+            } catch (error) {
+                console.error("Admin: Error menambah/update transaksi:", error);
+                alert("Gagal menyimpan transaksi!");
+            }
+        }
+
+        // Klik tombol Edit Transaksi
+        async function handleEditTxClick(e) {
+            editingTxId = e.target.dataset.id;
+            if (!selectedUserId || !editingTxId) return;
+
+            console.log("Admin: Mulai mengedit transaksi:", editingTxId);
+            
+            try {
+                const txDocRef = appUsersCollectionRef.doc(selectedUserId).collection("transactions").doc(editingTxId);
+                const docSnap = await txDocRef.get();
+                if (docSnap.exists) {
+                    const data = docSnap.data();
+                    
+                    // 1. Ambil data teks dari Firebase (cth: "28 Feb 2025")
+                    const textDate = data.date || '';
+                    const textTime = data.time || '';
+
+                    // 2. Konversi kembali ke format input (cth: "2025-02-28")
+                    const formDate = parseTextToDate(textDate);
+                    const formTime = parseTextToTime(textTime);
+
+                    // 3. Isi form dengan format input
+                    document.getElementById('tx-date').value = formDate;
+                    document.getElementById('tx-time').value = formTime;
+                    
+                    document.getElementById('tx-desc').value = data.desc || '';
+                    document.getElementById('tx-via').value = data.via || '';
+                    document.getElementById('tx-amount-number').value = data.amount_number || 0;
+                    
+                    txFormTitle.textContent = 'Edit Transaksi';
+                    addTxBtn.textContent = 'Simpan Perubahan';
+                    cancelEditTxBtn.classList.remove('hidden');
+                    window.scrollTo(0, 0); 
+                } else {
+                    console.error("Dokumen transaksi tidak ditemukan!");
+                    editingTxId = null;
+                }
+            } catch (error) {
+                console.error("Gagal mengambil data transaksi:", error);
+                editingTxId = null;
+            }
+        }
+
+        // Reset Form Transaksi
+        function resetTxForm() {
+            editingTxId = null;
+            txForm.reset();
+            txFormTitle.textContent = 'Tambah Transaksi Baru';
+            addTxBtn.textContent = 'Tambah Transaksi';
+            addTxBtn.disabled = false;
+            cancelEditTxBtn.classList.add('hidden');
+        }
+
+        // Tampilkan Daftar Transaksi
+        function listenForTransactions(userId) {
+            const txCollectionRef = appUsersCollectionRef.doc(userId).collection("transactions");
+            const q = txCollectionRef.orderBy("timestamp", "desc");
+            
+            if (unsubscribeTxListener) unsubscribeTxListener();
+
+            unsubscribeTxListener = q.onSnapshot((querySnapshot) => {
+                if (querySnapshot.empty) {
+                    transactionListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: #888;">Belum ada transaksi.</p>';
+                    return;
+                }
+                transactionListContainer.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const tx = doc.data();
+                    const txId = doc.id;
+                    let amountColor = (tx.amount.startsWith('+')) ? 'green' : 'var(--danger-color)';
+                    if (tx.amount.startsWith('Rp0,00')) amountColor = '#333';
+
+                    const item = document.createElement('div');
+                    item.className = 'list-item';
+                    item.innerHTML = `
+                        <div class="item-details">
+                            <span class="title">${tx.desc}</span>
+                            <span class="amount" style="color: ${amountColor};">${tx.amount}</span>
+                            <span class="time">${tx.date} - ${tx.time}</span>
+                        </div>
+                        <div class="item-actions">
+                            <button class="btn-warning btn-edit-tx" data-id="${txId}">Edit</button>
+                            <button class="btn-danger btn-delete-tx" data-id="${txId}">Hapus</button>
+                        </div>
+                    `;
+                    transactionListContainer.appendChild(item);
+                });
+                transactionListContainer.querySelectorAll('.btn-edit-tx').forEach(btn => btn.addEventListener('click', handleEditTxClick));
+                transactionListContainer.querySelectorAll('.btn-danger').forEach(btn => btn.addEventListener('click', handleDeleteTransaction));
+            }, (error) => {
+                console.error("Admin: Error listening to transactions:", error);
+                transactionListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Gagal memuat transaksi.</p>';
+            });
+        }
+        
+        // Hapus Transaksi
+        async function handleDeleteTransaction(e) {
+            const txId = e.target.dataset.id;
+            if (!selectedUserId || !txId) return;
+            if (!confirm(`Yakin ingin menghapus transaksi ini (ID: ${txId})?`)) return;
+
+            e.target.disabled = true;
+            try {
+                await appUsersCollectionRef.doc(selectedUserId).collection("transactions").doc(txId).delete();
+                if (editingTxId === txId) {
+                    resetTxForm();
+                }
+            } catch (error) {
+                alert("Gagal menghapus transaksi!");
+            }
+        }
+        
+        // --- 5. FUNGSI FORMATTING & KONVERSI BARU ---
+        
+        const textMonths = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
+        const monthParseMap = {
+            "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "Mei": "05", "Jun": "06", 
+            "Jul": "07", "Ags": "08", "Sep": "09", "Okt": "10", "Nov": "11", "Des": "12"
+        };
+
+        /**
+         * Mengubah "2025-02-28" (dari <input type="date">) 
+         * menjadi "28 Feb 2025" (format untuk Firebase)
+         */
+        function formatDateToText(dateString) {
+            if (!dateString) return "";
+            try {
+                // Tambahkan T00:00:00 untuk menghindari masalah zona waktu
+                const date = new Date(dateString + 'T00:00:00'); 
+                const day = date.getDate();
+                const monthName = textMonths[date.getMonth()];
+                const year = date.getFullYear();
+                return `${day} ${monthName} ${year}`;
+            } catch (e) {
+                return dateString; // Fallback
+            }
+        }
+
+        /**
+         * Mengubah "21:37" (dari <input type="time">)
+         * menjadi "21:37:05 WIB" (format untuk Firebase)
+         */
+        function formatTimeToText(timeString) {
+            if (!timeString) return "";
+            // Menambahkan detik :05 (seperti placeholder) dan WIB
+            return `${timeString}:05 WIB`;
+        }
+        
+        /**
+         * Mengubah "28 Feb 2025" (dari Firebase)
+         * menjadi "2025-02-28" (format untuk <input type="date">)
+         */
+        function parseTextToDate(textDate) {
+            if (!textDate) return "";
+            try {
+                const parts = textDate.split(" "); // ["28", "Feb", "2025"]
+                if (parts.length !== 3) return "";
+                
+                const day = parts[0].padStart(2, '0');
+                const month = monthParseMap[parts[1]];
+                const year = parts[2];
+                
+                if (!month) return ""; // Gagal parse bulan
+                
+                return `${year}-${month}-${day}`;
+            } catch (e) {
+                return ""; // Gagal
+            }
+        }
+
+        /**
+         * Mengubah "21:37:05 WIB" (dari Firebase)
+         * menjadi "21:37" (format untuk <input type="time">)
+         */
+        function parseTextToTime(textTime) {
+             if (!textTime) return "";
+             try {
+                const parts = textTime.split(":"); // ["21", "37", "05 WIB"]
+                if (parts.length < 2) return "";
+                return `${parts[0]}:${parts[1]}`;
+             } catch(e) {
+                return "";
+             }
+        }
+
+        // Fungsi format mata uang (tidak berubah)
+        function formatCurrencyString(number) {
+            if (isNaN(number) || number === null) number = 0;
+            const isNegative = number < 0;
+            const prefix = isNegative ? '- Rp' : '+ Rp';
+            const absoluteValue = Math.abs(number);
+            const formattedValue = absoluteValue.toLocaleString('id-ID');
+            const finalString = `${prefix}${formattedValue},00`;
+            if (number === 0) return 'Rp0,00';
+            return finalString;
+        }
+
+        // --- PASANG EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            adminLoginForm.addEventListener('submit', handleAdminLogin);
+            createUserForm.addEventListener('submit', handleCreateUserSubmit);
+            cancelEditUserBtn.addEventListener('click', resetUserForm);
+            txForm.addEventListener('submit', handleTxFormSubmit);
+            cancelEditTxBtn.addEventListener('click', resetTxForm);
+            backToUsersBtn.addEventListener('click', handleBackToUsers);
+        });
+
+    </script>
+</body>
+</html>
