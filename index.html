@@ -1622,7 +1622,16 @@
                 addWatermark(doc); 
 
                 // 11. 🚀 PERUBAHAN UTAMA: Kirim ke Android jika ada 🚀
-                const fileName = `eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}.pdf`;
+                
+                // --- Logika Baru untuk Nama File ---
+                const now = new Date();
+                const jam = String(now.getHours()).padStart(2, '0');
+                const menit = String(now.getMinutes()).padStart(2, '0');
+                const randomDigits = String(Math.floor(Math.random() * 1000)).padStart(3, '0');
+                
+                // Format: eStatement-user-Tahun-Bulan-JamMenitAngkaAcak.pdf
+                const fileName = `eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}-${jam}${menit}${randomDigits}.pdf`;
+                // --- Akhir Logika Baru ---
 
                 if (window.Android && typeof window.Android.savePdf === 'function') {
                     // Jika jembatan "Android" dan fungsi "savePdf" ada...
