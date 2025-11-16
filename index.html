@@ -777,7 +777,7 @@
         }
 
         .estatement-date-filter-group {
-            display: flex;
+            display: none; /* Diubah: Sembunyi by default */
             gap: 10px;
         }
         
@@ -824,6 +824,138 @@
         }
         
         /* --- AKHIR CSS e-Statement --- */
+        /* --- AKHIR CSS e-Statement --- */
+
+        /* --- CSS MODAL KONFIRMASI E-STATEMENT --- */
+        #estatement-confirm-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Sembunyi by default */
+            justify-content: center;
+            align-items: center;
+            z-index: 4000; /* Di atas modal login */
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        #estatement-confirm-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+        #estatement-confirm-modal {
+            background-color: white;
+            padding: 24px;
+            border-radius: 12px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transform: scale(0.95);
+            transition: transform 0.2s ease-in-out;
+        }
+        #estatement-confirm-overlay.show #estatement-confirm-modal {
+            transform: scale(1);
+        }            #estatement-confirm-modal h4 {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #016EC3; /* Diubah jadi biru */
+                margin: 0 0 10px 0;
+            }
+        #estatement-confirm-modal p {
+            font-size: 0.95rem;
+            color: #555;
+            margin: 0 0 20px 0;
+        }
+        .estatement-confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .estatement-confirm-buttons button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }        .estatement-btn-batal {
+            background-color: #f0f2f5;
+            color: #555;
+            border: 1px solid #000; /* Diubah jadi hitam */
+        }        .estatement-btn-ya {
+            background-color: #016EC3;
+            color: white;
+            border: 1px solid #000; /* Ditambah border hitam */
+        }
+        /* --- AKHIR CSS MODAL --- */
+        /* --- AKHIR CSS MODAL --- */
+
+        /* --- CSS MODAL PROCESSING E-STATEMENT --- */
+        #processing-estat-overlay {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 5000; /* Paling atas */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        #processing-estat-overlay.show {
+            display: flex;
+            opacity: 1;
+        }        #processing-estat-modal {
+            background-color: white;
+            width: 100%;
+            max-width: 312px; /* Dikecilkan 20% (dari 390px) */
+            margin-bottom: 10px; /* Agar tidak terlalu mepet */
+            box-sizing: border-box;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            transform: translateY(100%);
+            transition: transform 0.3s ease-out;
+        }
+        #processing-estat-overlay.show #processing-estat-modal {
+            transform: translateY(0);
+        }            #processing-estat-modal img {
+                width: 256px; /* Dikecilkan 20% (dari 320px) */
+                height: auto;
+                margin-bottom: 15px;
+            }            #processing-estat-modal h4 {
+                font-size: 1.2rem;
+                font-weight: 700;
+                color: #016EC3; /* Diubah jadi biru */
+                margin: 0 0 10px 0;
+            }
+        #processing-estat-modal p {
+            font-size: 0.95rem;
+            color: #555;
+            margin: 0 0 20px 0;
+        }
+        #processing-estat-modal button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: #016EC3;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        /* --- AKHIR CSS MODAL PROCESSING --- */
+
+
         
         .app-container.mutasi-view #home-screen { display: none; }
         .app-container.mutasi-view #mutasi-screen { display: flex; }
@@ -971,11 +1103,10 @@
                         <div class="estatement-section">
                             <label class="estatement-label">Rentang Waktu</label>
                             <div class="estatement-radio-group">
-                                <input type="radio" id="radio-bulanan" name="rentang_waktu" value="bulanan" checked>
+                                <input type="radio" id="radio-bulanan" name="rentang_waktu" value="bulanan">
                                 <label for="radio-bulanan">Pilih Bulan</label>
                                 
-                                <input type="radio" id="radio-semua" name="rentang_waktu" value="semua" style="margin-left: 20px;">
-                                <label for="radio-semua">Semua</label>
+
                             </div>
                             
                             <div class="estatement-date-filter-group">
@@ -1015,6 +1146,30 @@
             <div class="time-range-cancel" id="time-range-cancel">Batal</div>
         </div>
     </div>
+
+    
+    <div id="estatement-confirm-overlay">
+        <div id="estatement-confirm-modal">
+            <h4>Buat e-Statement?</h4>
+            <p>Apakah kamu yakin untuk membuat e-Statement?</p>
+            <div class="estatement-confirm-buttons">
+                <button id="estatement-confirm-batal" class="estatement-btn-batal">Batal</button>
+                <button id="estatement-confirm-ya" class="estatement-btn-ya">Ya</button>
+            </div>
+        </div>
+    </div>
+
+    
+    <div id="processing-estat-overlay">
+        <div id="processing-estat-modal">
+            <img src="estat.png" alt="Processing">
+            <h4>Memproses e-Statement</h4>
+            <p>e-Statement kamu sedang diproses...</p>
+            <button id="processing-estat-oke">Oke</button>
+        </div>
+    </div>
+
+
 
 
     <script>
@@ -1183,10 +1338,13 @@
          * Fungsi utama untuk membuat PDF e-Statement
          * *** LOGIKA DIPERBARUI UNTUK MENGIRIM DATA KE ANDROID ***
          */
-        async function generateEStatement() {
-            const estatementBtn = document.getElementById('buat-estatement-btn');
+        async function generateEStatement() {            const estatementBtn = document.getElementById('buat-estatement-btn');
             estatementBtn.disabled = true;
-            estatementBtn.textContent = 'Membuat...';
+            // estatementBtn.textContent = 'Membuat...'; // Diganti dengan modal
+
+            // Tampilkan modal processing
+            const processingOverlay = document.getElementById('processing-estat-overlay');
+            processingOverlay.classList.add('show');
 
             try {
                 // 1. Periksa library
@@ -1251,7 +1409,16 @@
                 // 3. Ambil filter
                 const selectedMonth = parseInt(document.getElementById('select-bulan').value, 10); 
                 const selectedYear = parseInt(document.getElementById('select-tahun').value, 10); 
-                const isSemua = document.getElementById('radio-semua').checked;
+                const isBulanan = document.getElementById('radio-bulanan').checked;
+
+                // Validasi: Pastikan "Pilih Bulan" sudah di-check
+                if (!isBulanan) {
+                    alert("Silakan pilih rentang waktu 'Pilih Bulan' terlebih dahulu.");
+                    // Reset tombol
+                    estatementBtn.disabled = false;
+                    estatementBtn.textContent = 'Buat e-Statement';
+                    return; // Hentikan eksekusi
+                }
                 
                 // 4. Kalkulasi Saldo
                 const saldoAwal = userData.saldo_awal || 0;
@@ -1285,26 +1452,23 @@
                 let periodeStr;
                 let monthOpeningBalance;
                 
-                if (isSemua) {
-                    txsForPeriod = processedTxs;
-                    periodeStr = "Semua Transaksi";
-                    monthOpeningBalance = grandOpeningBalance;
+                // Logika "Semua" dihapus, kita hanya menjalankan logika "Bulanan"
+                
+                txsForPeriod = processedTxs.filter(tx => 
+                    tx.txDate.getMonth() === selectedMonth &&
+                    tx.txDate.getFullYear() === selectedYear
+                );
+                
+                if (txsForPeriod.length > 0) {
+                    monthOpeningBalance = txsForPeriod[txsForPeriod.length - 1].balanceBefore;
                 } else {
-                    txsForPeriod = processedTxs.filter(tx => 
-                        tx.txDate.getMonth() === selectedMonth &&
-                        tx.txDate.getFullYear() === selectedYear
-                    );
-                    
-                    if (txsForPeriod.length > 0) {
-                        monthOpeningBalance = txsForPeriod[txsForPeriod.length - 1].balanceBefore;
-                    } else {
-                        const lastTxBeforeMonth = processedTxs.find(tx => tx.txDate < new Date(selectedYear, selectedMonth, 1));
-                        monthOpeningBalance = lastTxBeforeMonth ? lastTxBeforeMonth.balanceAfter : grandOpeningBalance;
-                    }
-                    const tglAwal = `01/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
-                    const tglAkhir = `${new Date(selectedYear, selectedMonth + 1, 0).getDate()}/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
-                    periodeStr = `${tglAwal} - ${tglAkhir}`;
+                    const lastTxBeforeMonth = processedTxs.find(tx => tx.txDate < new Date(selectedYear, selectedMonth, 1));
+                    monthOpeningBalance = lastTxBeforeMonth ? lastTxBeforeMonth.balanceAfter : grandOpeningBalance;
                 }
+                const tglAwal = `01/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
+                const tglAkhir = `${new Date(selectedYear, selectedMonth + 1, 0).getDate()}/${String(selectedMonth+1).padStart(2,'0')}/${String(selectedYear).slice(2)}`;
+                periodeStr = `${tglAwal} - ${tglAkhir}`;
+
 
                 // 7. Ubah jadi data tabel (Urutkan: Terlama -> Terbaru)
                 let runningBalance = monthOpeningBalance;
@@ -1650,11 +1814,12 @@
 
             } catch (error) {
                 console.error("Gagal membuat e-Statement:", error);
-                alert("Terjadi kesalahan saat membuat PDF: " + error.message);
-            } finally {
-                // Selalu reset tombol, apa pun yang terjadi
-                estatementBtn.disabled = false;
-                estatementBtn.textContent = 'Buat e-Statement';
+                alert("Terjadi kesalahan saat membuat PDF: " + error.message);            } finally {
+                // Logika reset tombol dipindahkan ke event listener "Oke" modal processing
+                // agar modal tetap tampil sampai user menutupnya.
+                
+                // estatementBtn.disabled = false;
+                // estatementBtn.textContent = 'Buat e-Statement';
             }
         }
         
@@ -1962,26 +2127,78 @@
             }
         });
         
-        // --- LOGIKA: Filter e-Statement (Bulanan / Semua) (Tidak berubah) ---
+        // --- LOGIKA: Filter e-Statement (Bulanan / Semua) (DIRUBAH v2 - Toggle) ---
         const radioBulanan = document.getElementById('radio-bulanan');
-        const radioSemua = document.getElementById('radio-semua');
         const dateFilterGroup = document.querySelector('.estatement-date-filter-group');
         
-        radioBulanan.addEventListener('change', () => {
+        // Variabel untuk melacak status "sebelum" klik (penting untuk toggle)
+        let wasBulanChecked = false; 
+
+        radioBulanan.addEventListener('click', () => {
+            // Cek status "saat ini" (setelah klik)
             if (radioBulanan.checked) {
-                dateFilterGroup.style.display = 'flex';
+                if (wasBulanChecked) {
+                    // Jika "sebelumnya" sudah checked, dan diklik lagi -> uncheck
+                    radioBulanan.checked = false;
+                    dateFilterGroup.style.display = 'none'; // Sembunyikan
+                } else {
+                    // Jika "sebelumnya" tidak checked -> check (normal)
+                    dateFilterGroup.style.display = 'flex'; // Tampilkan
+                }
+            } else {
+                // Jika statusnya jadi "unchecked" (misal oleh browser/reset)
+                dateFilterGroup.style.display = 'none'; // Sembunyikan
             }
+            
+            // Perbarui status "sebelumnya" untuk klik berikutnya
+            wasBulanChecked = radioBulanan.checked;
         });
         
-        radioSemua.addEventListener('change', () => {
-            if (radioSemua.checked) {
-                dateFilterGroup.style.display = 'none';
+        // Pastikan status awal pelacak sinkron (meskipun default-nya false)
+        wasBulanChecked = radioBulanan.checked;
+
+        // --- Event listener untuk tombol Buat e-Statement (DIRUBAH: Pake Modal Konfirmasi) ---
+        const estatementBtn = document.getElementById('buat-estatement-btn');
+        const confirmOverlay = document.getElementById('estatement-confirm-overlay');
+        const confirmBtnBatal = document.getElementById('estatement-confirm-batal');
+        const confirmBtnYa = document.getElementById('estatement-confirm-ya');
+
+        // 1. Tampilkan modal saat tombol "Buat e-Statement" diklik
+        estatementBtn.addEventListener('click', () => {
+            // Cek validasi di dalam generateEStatement() saja.
+            // Langsung tampilkan modal.
+            confirmOverlay.classList.add('show');
+        });
+
+        // 2. Sembunyikan modal saat "Batal" diklik
+        confirmBtnBatal.addEventListener('click', () => {
+            confirmOverlay.classList.remove('show');
+        });
+
+        // 3. Panggil fungsi generate dan sembunyikan modal saat "Ya" diklik
+        confirmBtnYa.addEventListener('click', () => {
+            confirmOverlay.classList.remove('show');
+            generateEStatement(); // Panggil fungsi utama di sini
+        });
+
+        // 4. (Opsional) Sembunyikan jika klik di luar modal
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                confirmOverlay.classList.remove('show');
             }
         });
 
-        // --- Event listener untuk tombol Buat e-Statement (Tidak berubah) ---
-        const estatementBtn = document.getElementById('buat-estatement-btn');
-        estatementBtn.addEventListener('click', generateEStatement);
+        // --- LOGIKA MODAL PROCESSING e-Statement (DIPINDAHKAN) ---
+        const processingOverlay = document.getElementById('processing-estat-overlay');
+        const processingBtnOke = document.getElementById('processing-estat-oke');
+        const mainEstatementBtn = document.getElementById('buat-estatement-btn'); // Ambil tombol utama
+
+        processingBtnOke.addEventListener('click', () => {
+            processingOverlay.classList.remove('show');
+            // Reset tombol utama HANYA setelah "Oke" diklik
+            mainEstatementBtn.disabled = false;
+            mainEstatementBtn.textContent = 'Buat e-Statement';
+        });
 
     </script>
 
