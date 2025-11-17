@@ -1107,11 +1107,8 @@
                                 <label for="radio-bulanan">Pilih Bulan</label>
                                 
 
-                            </div>
-                            
-                            <div class="estatement-date-filter-group">
-                                <select id="select-bulan" class="estatement-select"></select>
-                                <select id="select-tahun" class="estatement-select"></select>
+                            </div>                            <div class="estatement-date-filter-group">
+                                <select id="select-periode" class="estatement-select"></select>
                             </div>
                         </div>
                         
@@ -1406,9 +1403,11 @@
                 const userData = window.loggedInUserData;
                 const allTxs = window.allTransactions; 
 
-                // 3. Ambil filter
-                const selectedMonth = parseInt(document.getElementById('select-bulan').value, 10); 
-                const selectedYear = parseInt(document.getElementById('select-tahun').value, 10); 
+                // 3. Ambil filter                // 3. Ambil filter (DIPERBARUI: Parse dari satu dropdown)
+                const periodeVal = document.getElementById('select-periode').value;
+                const parts = periodeVal.split('-');
+                const selectedYear = parseInt(parts[0], 10);
+                const selectedMonth = parseInt(parts[1], 10); 
                 const isBulanan = document.getElementById('radio-bulanan').checked;
 
                 // Validasi: Pastikan "Pilih Bulan" sudah di-check
@@ -2069,33 +2068,27 @@
                 rentangWaktuLabel.textContent = selectedText; 
                 hideModal();
             });
-        });
-
-        // --- LOGIKA: Populasi Filter Tanggal e-Statement (Tidak berubah) ---
-        const selectBulan = document.getElementById('select-bulan');
-        const selectTahun = document.getElementById('select-tahun');
+        });        // --- LOGIKA: Populasi Filter Tanggal e-Statement (DIPERBARUI: GABUNGAN) ---
+        const selectPeriode = document.getElementById('select-periode');
 
         function populateDateFilters() {
             const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
             const now = new Date();
-            
-            months.forEach((month, index) => {
-                const option = document.createElement('option');
-                option.value = index; // 0-11
-                option.textContent = month;
-                selectBulan.appendChild(option);
-            });
-            selectBulan.value = now.getMonth(); 
-
             const currentYear = now.getFullYear();
-            const startYear = 2020;
-            for (let year = currentYear; year >= startYear; year--) {
-                const option = document.createElement('option');
-                option.value = year;
-                option.textContent = year;
-                selectTahun.appendChild(option);
+            const currentMonth = now.getMonth();
+            
+            // Loop dari tahun sekarang mundur ke 2020
+            for (let y = currentYear; y >= 2020; y--) {
+                // Jika tahun sekarang, mulai dari bulan ini. Jika tahun lalu, mulai dari Desember (11)
+                let startM = (y === currentYear) ? currentMonth : 11;
+                
+                for (let m = startM; m >= 0; m--) {
+                    const option = document.createElement('option');
+                    option.value = `${y}-${m}`; // Format Value: 2025-10 (Tahun-IndexBulan)
+                    option.textContent = `${months[m]} ${y}`; // Teks: November 2025
+                    selectPeriode.appendChild(option);
+                }
             }
-            selectTahun.value = currentYear;
         }
         populateDateFilters();
 
