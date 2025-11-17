@@ -37,6 +37,12 @@
         
         // Variabel global untuk menyimpan semua transaksi
         let allTransactions = [];
+        
+        // Variabel global untuk menampung PDF sementara sebelum di-download via tombol "Oke"
+        let pendingPdfData = null;
+        let pendingFileName = null;
+        let pendingDocObj = null;
+        let isAndroidBridgeAvailable = false;
 
         // Fungsi inisialisasi utama yang baru
         async function initFirebaseAndLogin(username, password) {
@@ -1782,9 +1788,7 @@
                     doc.putTotalPages("{totalPages}");
                 }
                 
-                addWatermark(doc); 
-
-                // 11. 🚀 PERUBAHAN UTAMA: Kirim ke Android jika ada 🚀
+                addWatermark(doc);                // 11. 🚀 PERUBAHAN UTAMA: Simpan ke Variabel Global (Tunggu klik "Oke") 🚀
                 
                 // --- Logika Baru untuk Nama File ---
                 const now = new Date();
@@ -1794,21 +1798,18 @@
                 
                 // Format: eStatement-user-Tahun-Bulan-JamMenitAngkaAcak.pdf
                 const fileName = `eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}-${jam}${menit}${randomDigits}.pdf`;
-                // --- Akhir Logika Baru ---
+                
+                // Simpan data ke variabel global agar bisa dieksekusi tombol "Oke"
+                pendingFileName = fileName;
+                pendingDocObj = doc;
+                isAndroidBridgeAvailable = (window.Android && typeof window.Android.savePdf === 'function');
 
-                if (window.Android && typeof window.Android.savePdf === 'function') {
-                    // Jika jembatan "Android" dan fungsi "savePdf" ada...
-                    
-                    // 1. Ubah PDF menjadi string Base64
-                    const pdfData = doc.output('datauristring');
-                    
-                    // 2. Kirim data ke Android (Java)
-                    window.Android.savePdf(pdfData, fileName);
-                    
+                if (isAndroidBridgeAvailable) {
+                    // Jika Android, kita butuh string Base64/DataURI
+                    pendingPdfData = doc.output('datauristring');
                 } else {
-                    // Jika tidak, gunakan metode download browser biasa
-                    // (Ini agar tetap berfungsi di Vercel/Chrome)
-                    doc.save(fileName);
+                    // Jika Browser biasa, kita pakai objek doc langsung nanti
+                    pendingPdfData = null;
                 }
 
             } catch (error) {
@@ -2179,18 +2180,32 @@
             if (e.target === confirmOverlay) {
                 confirmOverlay.classList.remove('show');
             }
-        });
-
-        // --- LOGIKA MODAL PROCESSING e-Statement (DIPINDAHKAN) ---
+        });        // --- LOGIKA MODAL PROCESSING e-Statement (DIPINDAHKAN & DIPERBARUI) ---
         const processingOverlay = document.getElementById('processing-estat-overlay');
         const processingBtnOke = document.getElementById('processing-estat-oke');
         const mainEstatementBtn = document.getElementById('buat-estatement-btn'); // Ambil tombol utama
 
         processingBtnOke.addEventListener('click', () => {
+            // 1. Tutup Modal
             processingOverlay.classList.remove('show');
-            // Reset tombol utama HANYA setelah "Oke" diklik
+            
+            // 2. EKSEKUSI DOWNLOAD / BUKA FILE DI SINI
+            if (isAndroidBridgeAvailable && pendingPdfData && pendingFileName) {
+                // Kirim ke Android (Java harus handle Intent ACTION_VIEW untuk membuka)
+                window.Android.savePdf(pendingPdfData, pendingFileName);
+            } else if (pendingDocObj && pendingFileName) {
+                // Download browser biasa
+                pendingDocObj.save(pendingFileName);
+            }
+
+            // 3. Reset tombol utama
             mainEstatementBtn.disabled = false;
             mainEstatementBtn.textContent = 'Buat e-Statement';
+            
+            // 4. Bersihkan memori sementara
+            pendingPdfData = null;
+            pendingFileName = null;
+            pendingDocObj = null;
         });
 
     </script>
