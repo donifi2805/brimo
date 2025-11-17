@@ -1414,16 +1414,8 @@
                 const parts = periodeVal.split('-');
                 const selectedYear = parseInt(parts[0], 10);
                 const selectedMonth = parseInt(parts[1], 10); 
-                const isBulanan = document.getElementById('radio-bulanan').checked;
-
-                // Validasi: Pastikan "Pilih Bulan" sudah di-check
-                if (!isBulanan) {
-                    alert("Silakan pilih rentang waktu 'Pilih Bulan' terlebih dahulu.");
-                    // Reset tombol
-                    estatementBtn.disabled = false;
-                    estatementBtn.textContent = 'Buat e-Statement';
-                    return; // Hentikan eksekusi
-                }
+                const isBulanan = document.getElementById('radio-bulanan').checked;                // Validasi dihapus: Jika lingkaran putih, otomatis pakai bulan saat ini (default sistem)
+                // if (!isBulanan) { alert... return; }
                 
                 // 4. Kalkulasi Saldo
                 const saldoAwal = userData.saldo_awal || 0;
