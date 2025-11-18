@@ -2404,12 +2404,7 @@
 
         processingBtnOke.addEventListener('click', () => {
             // 1. Tutup Modal
-            processingOverlay.classList.remove('show');            // 2. EKSEKUSI DOWNLOAD UTAMA (JIKA ADA)
-            if (isAndroidBridgeAvailable && pendingPdfData && pendingFileName) {
-                window.Android.savePdf(pendingPdfData, pendingFileName);
-            } else if (pendingDocObj && pendingFileName) {
-                pendingDocObj.save(pendingFileName);
-            }
+            processingOverlay.classList.remove('show');            // 2. Download otomatis dinonaktifkan (Hanya simpan ke riwayat)
 
             // 3. SIMPAN KE LOCAL STORAGE (History)
             if (window.pendingHistoryData) {
