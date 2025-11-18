@@ -39,9 +39,10 @@
         let allTransactions = [];
         
         // Variabel global untuk menampung PDF sementara sebelum di-download via tombol "Oke"
-        let pendingPdfData = null;
+                let pendingPdfData = null;
         let pendingFileName = null;
         let pendingDocObj = null;
+        let pendingHistoryData = null; // Variabel baru untuk menyimpan data riwayat sementara
         let isAndroidBridgeAvailable = false;
 
         // Fungsi inisialisasi utama yang baru
@@ -86,9 +87,10 @@
                 // Ekstrak data ke window agar bisa diakses skrip PDF
                 window.loggedInUserData = userData;
 
-                // Muat data dan pasang listener
+                                // Muat data dan pasang listener
                 loadUserData(loggedInUserData);
                 listenForTransactions(loggedInUserDocId);
+                loadHistoryFromStorage(); // Muat history saat login berhasil
 
                 return { success: true };
 
@@ -105,6 +107,8 @@
                 document.getElementById('rekening-username').textContent = userData.profile_username;
                 document.getElementById('mutasi-rekening-number').textContent = userData.rekeningNumber;
                 document.getElementById('rekening-number').textContent = userData.rekeningNumber;
+                // Update nomor rekening pada kartu simulasi riwayat
+                document.querySelectorAll('.dynamic-rek').forEach(el => el.textContent = userData.rekeningNumber);
                 
                 console.log("Data pengguna (statis) dimuat ke UI.");
             } catch (error) {
@@ -1004,7 +1008,20 @@
             background-color: white; color: #d90429; margin-top: 8px;
             border-radius: 12px; font-weight: 600;
         }
-    </style>
+            /* --- CSS HISTORY UI (SCREENSHOT STYLE) --- */
+        #est-history-view { font-family: 'BRIku', sans-serif; background-color: #f0f2f5; }
+        .est-hist-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 12px; }
+        .est-card-top { display: flex; justify-content: flex-start; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .est-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; color: white; }
+        .est-bg-green { background-color: #16a34a; } /* Hijau Berhasil */
+        .est-bg-yellow { background-color: #fbbf24; color: white; } /* Kuning Diproses */
+        .est-badge-pdf { background-color: #f3f4f6; color: #333; font-weight: 600; }
+        .est-rek-label { font-size: 0.95rem; font-weight: 500; color: #111; margin-bottom: 2px; }
+        .est-date-sub { font-size: 0.85rem; color: #888; margin-bottom: 12px; }
+        .est-btn-unduh { background-color: #e0f2fe; color: #0284c7; width: 100%; border: none; padding: 10px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; cursor: pointer; text-align: center; }
+        .est-date-header { font-size: 0.9rem; font-weight: 600; color: #333; margin: 20px 0 10px 0; }
+        #btn-back-to-form { background-color: #016EC3; color: white; border: none; padding: 10px 25px; border-radius: 20px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 10px; display: inline-block; }
+</style>
 </head>
 <body>
 
@@ -1128,6 +1145,35 @@
                     </div>
                     
                     <button id="buat-estatement-btn">Buat e-Statement</button>
+<div id="est-history-view" style="display: none; flex-direction: column; width: 100%;">
+                        <div style="margin-bottom: 10px;">
+                             <button id="btn-back-to-form">Buat e-Statement</button>
+                        </div>
+                        <div id="est-history-list">
+                            
+                            <div class="est-date-header">18 Okt 2025</div>
+                            <div class="est-hist-card">
+                                <div class="est-card-top">
+                                    <span class="est-badge est-bg-green">Berhasil</span>
+                                    <span class="est-badge est-badge-pdf">PDF</span>
+                                </div>
+                                <div class="est-rek-label">No Rek: <span class="dynamic-rek">Loading...</span></div>
+                                <div class="est-date-sub">Okt 2025</div>
+                                <button class="est-btn-unduh">Unduh</button>
+                            </div>
+
+                            <div class="est-date-header">18 Sep 2025</div>
+                            <div class="est-hist-card">
+                                <div class="est-card-top">
+                                    <span class="est-badge est-bg-green">Berhasil</span>
+                                    <span class="est-badge est-badge-pdf">PDF</span>
+                                </div>
+                                <div class="est-rek-label">No Rek: <span class="dynamic-rek">Loading...</span></div>
+                                <div class="est-date-sub">Sep 2025</div>
+                                <button class="est-btn-unduh">Unduh</button>
+                            </div>
+                        </div>
+                    </div>
                     
                 </div>
 
@@ -1179,7 +1225,152 @@
         // --- VARIABEL GLOBAL UNTUK SALDO ---
         window.currentCalculatedBalanceString = "0"; 
         
+                // --- FUNGSI BARU: Load Riwayat dari Storage & Re-Generate PDF ---
+        
+        // 1. Render List Riwayat
+        function loadHistoryFromStorage() {
+            const historyList = document.getElementById('est-history-list');
+            historyList.innerHTML = ''; // Bersihkan list
+            
+            const rawHistory = localStorage.getItem('estatement_history');
+            const historyData = rawHistory ? JSON.parse(rawHistory) : [];
+            
+            // Urutkan dari yang terbaru (ID besar ke kecil)
+            historyData.sort((a, b) => b.id - a.id);
+
+            historyData.forEach(item => {
+                const cardHTML = `
+                    <div class="est-date-header">${item.dateHeader}</div>
+                    <div class="est-hist-card">
+                        <div class="est-card-top">
+                            <span class="est-badge est-bg-green">Berhasil</span>
+                            <span class="est-badge est-badge-pdf">PDF</span>
+                        </div>
+                        <div class="est-rek-label">No Rek: ${item.rekNum}</div>
+                        <div class="est-date-sub">${item.periodShort}</div>
+                        <button class="est-btn-unduh" onclick="reDownloadPdf(${item.id})">Unduh</button>
+                    </div>
+                `;
+                historyList.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // 2. Fungsi Re-Generate PDF (Versi Ringkas dari generateEStatement)
+        window.reDownloadPdf = function(id) {
+            try {
+                const rawHistory = localStorage.getItem('estatement_history');
+                const historyData = rawHistory ? JSON.parse(rawHistory) : [];
+                const item = historyData.find(h => h.id === id);
+                
+                if (!item) { alert("Data riwayat tidak ditemukan."); return; }
+
+                const doc = new window.jspdf.jsPDF('p', 'pt', 'a4');
+                const userData = item.userData;
+                const txs = item.transactions;
+                
+                // Helper Styles (Copy dari fungsi utama)
+                function setSubTextStyle(d) { d.setFont('helvetica', 'italic'); d.setFontSize(8); d.setTextColor(128, 128, 128); d.setGState(new d.GState({ opacity: 0.8 })); }
+                function setMainTextStyle(d, b=false) { d.setFont('helvetica', b?'bold':'normal'); d.setFontSize(9); d.setTextColor(0, 0, 0); d.setGState(new d.GState({ opacity: 1 })); }
+
+                // --- Header ---
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(1, 110, 195); doc.text("BRI", 40, 50);
+                doc.setTextColor(0, 0, 0); doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text("Melayani Dengan Setulus Hati", 40, 62);
+                doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.text("LAPORAN TRANSAKSI FINANSIAL", 380, 40);
+                doc.setFont('helvetica', 'italic'); doc.text("STATEMENT OF FINANCIAL TRANSACTION", 380, 52);
+
+                // --- Info User ---
+                setMainTextStyle(doc); doc.text("Yth : / To :", 40, 100);
+                doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.5); doc.rect(40, 110, 250, 50);
+                doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.text(userData.profile_username.toUpperCase(), 45, 125);
+                setMainTextStyle(doc); doc.text("URANGAGUNG RT 008/003", 45, 137); doc.text("SIDOARJO, SIDOARJO", 45, 149);
+
+                setMainTextStyle(doc); doc.text("No. Rekening", 40, 175); setSubTextStyle(doc); doc.text("Account No.", 40, 184); setMainTextStyle(doc); doc.text(`: ${userData.rekeningNumber}`, 110, 179);
+                setMainTextStyle(doc); doc.text("Nama Produk", 40, 200); setSubTextStyle(doc); doc.text("Product Name", 40, 209); setMainTextStyle(doc); doc.text(": Britama-IDR", 110, 204);
+                setMainTextStyle(doc); doc.text("Valuta", 40, 225); setSubTextStyle(doc); doc.text("Currency", 40, 234); setMainTextStyle(doc); doc.text(": IDR", 110, 229);
+
+                // --- Info Kanan ---
+                const tglLaporan = new Date(item.id).toLocaleDateString('en-GB');
+                setMainTextStyle(doc); doc.text("Tanggal Laporan", 380, 100); setSubTextStyle(doc); doc.text("Statement Date", 380, 109); setMainTextStyle(doc); doc.text(`: ${tglLaporan}`, 470, 104);
+                setMainTextStyle(doc); doc.text("Periode Transaksi", 380, 125); setSubTextStyle(doc); doc.text("Transaction Period", 380, 134); setMainTextStyle(doc); doc.text(`: ${item.fullPeriodStr}`, 470, 129);
+                setMainTextStyle(doc); doc.text("Unit Kerja", 380, 150); setSubTextStyle(doc); doc.text("Business Unit", 380, 159); setMainTextStyle(doc); doc.text(": Unit Silwan Indah", 470, 154);
+                setMainTextStyle(doc); doc.text("Alamat Unit Kerja", 380, 175); setSubTextStyle(doc); doc.text("Business Unit Address", 380, 184); setMainTextStyle(doc); doc.text(": J. Kutisari Selatan No. 123A", 470, 179); doc.text("  Tenggilis Mejoyo Surabaya", 470, 189);
+
+                // Garis
+                doc.setLineDashPattern([1, 1], 0); doc.setDrawColor(180, 180, 180); doc.setLineWidth(0.5);
+                doc.line(40, 250, doc.internal.pageSize.width - 40, 250); doc.line(40, 253, doc.internal.pageSize.width - 40, 253);
+                doc.setLineDashPattern([], 0); doc.setDrawColor(0, 0, 0);
+
+                // --- Tabel ---
+                let runningBalance = item.openingBalance;
+                const tableData = txs.reverse().map(tx => {
+                    runningBalance += tx.txAmount;
+                    const debet = tx.txAmount > 0 ? formatPdfCurrency(tx.txAmount) : '0,00';
+                    const kredit = tx.txAmount < 0 ? formatPdfCurrency(Math.abs(tx.txAmount)) : '0,00';
+                    return [ formatPdfTimestamp(tx.date, tx.time), tx.desc, getTellerId(), debet, kredit, formatPdfCurrency(runningBalance) ];
+                });
+
+                doc.autoTable({
+                    startY: 270,
+                    head: [['Tanggal Transaksi\nTransaction Date', 'Uraian Transaksi\nTransaction Description', 'Teller\nUser ID', 'Debet\nDebit', 'Kredit\nCredit', 'Saldo\nBalance']],
+                    headStyles: { fillColor: [1, 110, 195], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center', valign: 'middle', lineColor: [1, 110, 195], lineWidth: 0.5 },
+                    body: tableData,
+                    bodyStyles: { fontSize: 7, lineColor: [221, 221, 221], lineWidth: 0.5 },
+                    alternateRowStyles: { fillColor: [248, 249, 250] },
+                    columnStyles: { 0: { halign: 'center' }, 1: { halign: 'left' }, 2: { halign: 'center' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+                    didDrawPage: (data) => {
+                         doc.setFontSize(8); doc.setFont('helvetica', 'normal'); setMainTextStyle(doc);
+                         doc.text(new Date().toLocaleString('en-GB', { hour12: false }), doc.internal.pageSize.width - data.settings.margin.right, doc.internal.pageSize.height - 20, { align: 'right' });
+                         doc.text("Halaman " + doc.internal.getNumberOfPages(), doc.internal.pageSize.width - data.settings.margin.right, 70, { align: 'right' });
+                    }
+                });
+
+                // --- Summary ---
+                let finalY = doc.autoTable.previous.finalY;
+                doc.autoTable({
+                    startY: finalY + 10,
+                    head: [['Saldo Awal', 'Total Transaksi Debet', 'Total Transaksi Kredit', 'Saldo Akhir']],
+                    body: [[ formatPdfCurrency(item.openingBalance), formatPdfCurrency(item.summary.debet), formatPdfCurrency(item.summary.kredit), formatPdfCurrency(item.summary.closing) ]],
+                    theme: 'grid',
+                    headStyles: { fillColor: [1, 110, 195], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold', halign: 'center', lineColor: [1, 110, 195], lineWidth: 0.5, minCellHeight: 25 },
+                    bodyStyles: { fontSize: 8, halign: 'right', lineColor: [221, 221, 221], lineWidth: 0.5 },
+                    didDrawCell: (data) => {
+                        const trans = ['Opening Balance', 'Total Debit Transaction', 'Total Credit Transaction', 'Closing Balance'];
+                        if (data.section === 'head' && data.column.index !== undefined) {
+                            doc.saveGraphicsState(); setSubTextStyle(doc); doc.text(trans[data.column.index], data.cell.x + data.cell.width / 2, data.cell.y + 24, { align: 'center' }); doc.restoreGraphicsState();
+                        }
+                    }
+                });
+
+                // --- Footer (Terbilang & Disclaimer) ---
+                let yPos = doc.autoTable.previous.finalY + 25;
+                const pageWidth = doc.internal.pageSize.width;
+                setMainTextStyle(doc, true); doc.text("Terbilang / In Words", 40, yPos);
+                setMainTextStyle(doc); doc.text("Biaya materai telah dibayar Lunas", pageWidth - 40, yPos, { align: 'right' });
+                setSubTextStyle(doc); doc.text("Revenue/Stamp Duty Paid", pageWidth - 40, yPos + 9, { align: 'right' });
+                
+                yPos += 15; setMainTextStyle(doc); doc.text(terbilang(Math.floor(item.summary.closing)) + " RUPIAH", 40, yPos);
+                yPos += 10; setSubTextStyle(doc); doc.text(inWords(Math.floor(item.summary.closing)) + " RUPIAH", 40, yPos);
+                
+                yPos += 15; doc.setLineDashPattern([1, 1], 0); doc.setDrawColor(180, 180, 180); doc.line(40, yPos, pageWidth - 40, yPos); doc.setLineDashPattern([], 0);
+                yPos += 20; setMainTextStyle(doc, true); doc.text("Catatan / Relevant Information", 40, yPos);
+                yPos += 12; setMainTextStyle(doc); doc.setFontSize(7); doc.text("• Apabila terdapat perbedaan dengan catatan Saudara, harap menghubungi kami selambat-lambatnya 14 hari sejak diterimanya rekening koran ini.", 40, yPos);
+                yPos += 9; setSubTextStyle(doc); doc.setFontSize(7); doc.text("  In the case of any differences from your records, please contact us within 14 days from the receipt of this Statement of Account.", 40, yPos);
+                
+                // Watermark & Save
+                // (Watermark function logic assumed global or embedded if needed, skipping for brevity as per user instruction just to make it work)
+                
+                const fileName = `eStatement-${userData.login_username}-REPRINT-${item.id}.pdf`;
+                if (isAndroidBridgeAvailable) {
+                     window.Android.savePdf(doc.output('datauristring'), fileName);
+                } else {
+                     doc.save(fileName);
+                }
+
+            } catch(e) { console.error(e); alert('Gagal mengunduh ulang: ' + e.message); }
+        };
+
         // --- FUNGSI HELPER UNTUK e-Statement (Tidak Berubah) ---
+// --- FUNGSI HELPER UNTUK e-Statement (Tidak Berubah) ---
         
         const tellerPool = [ '8881234', '8885678', '8889012', '8884321', '8888888', '8882222', '8883333' ];
         function getTellerId() {
@@ -1791,9 +1982,27 @@
                 // Format: eStatement-user-Tahun-Bulan-JamMenitAngkaAcak.pdf
                 const fileName = `eStatement-${userData.login_username}-${selectedYear}-${selectedMonth+1}-${jam}${menit}${randomDigits}.pdf`;
                 
-                // Simpan data ke variabel global agar bisa dieksekusi tombol "Oke"
+                                // Simpan data ke variabel global agar bisa dieksekusi tombol "Oke"
                 pendingFileName = fileName;
                 pendingDocObj = doc;
+                
+                // --- SIMPAN DATA UNTUK RIWAYAT (Local Storage) ---
+                window.pendingHistoryData = {
+                    id: Date.now(), // ID unik
+                    dateHeader: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+                    rekNum: userData.rekeningNumber,
+                    periodShort: Object.keys(monthMap).find(key => monthMap[key] === String(selectedMonth + 1).padStart(2, '0')) + ' ' + selectedYear,
+                    fullPeriodStr: periodeStr,
+                    transactions: txsForPeriod, // Simpan transaksi yang sudah difilter
+                    openingBalance: monthOpeningBalance,
+                    userData: userData,
+                    summary: {
+                        debet: totalDebet,
+                        kredit: totalKredit,
+                        closing: calculatedSaldoAkhir
+                    }
+                };
+
                 isAndroidBridgeAvailable = (window.Android && typeof window.Android.savePdf === 'function');
 
                 if (isAndroidBridgeAvailable) {
@@ -2174,30 +2383,61 @@
             }
         });        // --- LOGIKA MODAL PROCESSING e-Statement (DIPINDAHKAN & DIPERBARUI) ---
         const processingOverlay = document.getElementById('processing-estat-overlay');
+                const estHistoryView = document.getElementById('est-history-view');
+        const estBackBtn = document.getElementById('btn-back-to-form');
+        const estHistoryList = document.getElementById('est-history-list');
+        
+                // Logika Tombol 'Buat e-Statement' (Kembali ke Form)
+        estBackBtn.addEventListener('click', () => {
+            estHistoryView.style.display = 'none';
+            // Tampilkan Form Inputs
+            document.querySelector('#estatement-content > div').style.display = 'block';
+            // Tampilkan Tombol Utama
+            document.getElementById('buat-estatement-btn').style.display = 'block';
+            // Load ulang history untuk memastikan sinkronasi
+            loadHistoryFromStorage();
+        });
         const processingBtnOke = document.getElementById('processing-estat-oke');
-        const mainEstatementBtn = document.getElementById('buat-estatement-btn'); // Ambil tombol utama
+        const mainEstatementBtn = document.getElementById('buat-estatement-btn');
 
         processingBtnOke.addEventListener('click', () => {
             // 1. Tutup Modal
             processingOverlay.classList.remove('show');
             
-            // 2. EKSEKUSI DOWNLOAD / BUKA FILE DI SINI
+            // 2. EKSEKUSI DOWNLOAD UTAMA (JIKA ADA)
             if (isAndroidBridgeAvailable && pendingPdfData && pendingFileName) {
-                // Kirim ke Android (Java harus handle Intent ACTION_VIEW untuk membuka)
                 window.Android.savePdf(pendingPdfData, pendingFileName);
             } else if (pendingDocObj && pendingFileName) {
-                // Download browser biasa
                 pendingDocObj.save(pendingFileName);
             }
 
-            // 3. Reset tombol utama
+            // 3. SIMPAN KE LOCAL STORAGE (History)
+            if (window.pendingHistoryData) {
+                const rawHistory = localStorage.getItem('estatement_history');
+                const historyList = rawHistory ? JSON.parse(rawHistory) : [];
+                // Tambahkan data baru di awal
+                historyList.unshift(window.pendingHistoryData);
+                // Simpan kembali (Batasi max 20 item agar tidak penuh)
+                if (historyList.length > 20) historyList.pop();
+                localStorage.setItem('estatement_history', JSON.stringify(historyList));
+            }
+
+            // 4. PINDAH KE HALAMAN HISTORY & RENDER ULANG
+            document.querySelector('#estatement-content > div').style.display = 'none';
             mainEstatementBtn.disabled = false;
             mainEstatementBtn.textContent = 'Buat e-Statement';
+            mainEstatementBtn.style.display = 'none';
             
-            // 4. Bersihkan memori sementara
+            estHistoryView.style.display = 'flex';
+            
+            // Panggil fungsi render yang baru dibuat
+            loadHistoryFromStorage();
+
+            // 5. Bersihkan memori
             pendingPdfData = null;
             pendingFileName = null;
             pendingDocObj = null;
+            window.pendingHistoryData = null;
         });
 
     </script>
