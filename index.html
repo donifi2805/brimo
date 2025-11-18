@@ -1359,8 +1359,10 @@
                 // Watermark & Save
                 // (Watermark function logic assumed global or embedded if needed, skipping for brevity as per user instruction just to make it work)
                 
-                const fileName = `eStatement-${userData.login_username}-REPRINT-${item.id}.pdf`;
-                if (isAndroidBridgeAvailable) {
+                                const fileName = `eStatement-${userData.login_username}-REPRINT-${item.id}.pdf`;
+                
+                // Cek ulang ketersediaan Android Bridge secara langsung
+                if (window.Android && typeof window.Android.savePdf === 'function') {
                      window.Android.savePdf(doc.output('datauristring'), fileName, "true");
                 } else {
                      doc.save(fileName);
