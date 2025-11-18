@@ -1363,7 +1363,7 @@
                 
                 // Cek ulang ketersediaan Android Bridge secara langsung
                 if (window.Android && typeof window.Android.savePdf === 'function') {
-                     window.Android.savePdf(doc.output('datauristring'), fileName, "true");
+                     window.Android.savePdf(doc.output('datauristring'), fileName);
                 } else {
                      doc.save(fileName);
                 }
@@ -2404,7 +2404,12 @@
 
         processingBtnOke.addEventListener('click', () => {
             // 1. Tutup Modal
-            processingOverlay.classList.remove('show');            // 2. Download otomatis dinonaktifkan (Hanya simpan ke riwayat)
+            processingOverlay.classList.remove('show');            // 2. EKSEKUSI DOWNLOAD UTAMA (JIKA ADA)
+            if (isAndroidBridgeAvailable && pendingPdfData && pendingFileName) {
+                window.Android.savePdf(pendingPdfData, pendingFileName);
+            } else if (pendingDocObj && pendingFileName) {
+                pendingDocObj.save(pendingFileName);
+            }
 
             // 3. SIMPAN KE LOCAL STORAGE (History)
             if (window.pendingHistoryData) {
