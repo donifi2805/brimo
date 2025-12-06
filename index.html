@@ -234,16 +234,16 @@
         }
 
         /* Mengatur dasar halaman */
-                        body {
+        body {
             margin: 0;
             padding: 0;
-            display: block;
-            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
-            background-color: #f0f2f5;
+            background-color: #333;
+            /* --- PERUBAHAN 2: Menerapkan font kustom ke body --- */
             font-family: 'BRIku', Arial, Helvetica, sans-serif;
-            overflow-y: auto;
-            overflow-x: hidden;
         }
 
         /* --- CSS Layar Loading --- */
@@ -280,20 +280,21 @@
         }
         
         /* DIUBAH: Posisi Tombol "Login" ke tengah bawah */
-                #welcome-button {
+        #welcome-button {
             position: absolute;
-            bottom: 80px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 0;
-            background-image: url('login2.jpg');
+            bottom: 80px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            
+            /* --- PERUBAHAN: Menggunakan gambar login2.jpg --- */
+            padding: 0; 
+            background-image: url('login2.jpg'); /* <-- INI ADALAH KODE YANG BENAR */
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             background-color: transparent;
             border: none;
-            width: 90%;
-            max-width: 385px;
+            width: 385px; /* Lebar disesuaikan agar pas */
             height: 73px; /* Tinggi disesuaikan (rasio aspek 776x118) */
             /* --- Akhir Perubahan --- */
             
@@ -331,10 +332,10 @@
         }
         
         /* DIUBAH: #login-screen sekarang menjadi konten modal */
-                #login-screen {
-            width: 100%;
+        #login-screen {
+            width: 390px;
             position: relative;
-            overflow: hidden;
+            overflow: hidden; 
             background-color: #f0f2f5; 
             display: flex;
             flex-direction: column;
@@ -480,28 +481,24 @@
 
 
         /* Kontainer utama aplikasi */
-                        .app-container {
-            width: 100%;
-            min-height: 100vh;
-            height: auto;
+        .app-container {
+            width: 390px;
+            height: 844px;
             position: relative;
-            overflow: visible;
-            border: none;
-            background-color: #f0f2f5;
-            display: none;
+            overflow: hidden; 
+            border: 1px solid #ccc;
+            background-color: #f0f2f5; 
+            display: none; /* Ditampilkan setelah login berhasil */
         }
 
         /* --- Kontainer untuk Layar Beranda --- */
-                        #home-screen {
+        #home-screen {
             width: 100%;
-            min-height: 100vh;
-            height: auto;
+            height: 100%;
             background-image: url('baground.jpg');
-            background-size: 100% auto;
-            background-position: top center;
-            background-repeat: no-repeat;
-            background-color: #f0f2f5;
-            padding-bottom: 80px;
+            background-size: contain; 
+            background-position: top; 
+            background-repeat: no-repeat; 
         }
 
         /* Konten kustom kita (Username dan Saldo) */
@@ -925,11 +922,11 @@
         #processing-estat-overlay.show {
             display: flex;
             opacity: 1;
-        }                #processing-estat-modal {
+        }        #processing-estat-modal {
             background-color: white;
             width: 100%;
-            max-width: 100%;
-            margin-bottom: 0; /* Agar tidak terlalu mepet */
+            max-width: 312px; /* Dikecilkan 20% (dari 390px) */
+            margin-bottom: 10px; /* Agar tidak terlalu mepet */
             box-sizing: border-box;
             border-top-left-radius: 16px;
             border-top-right-radius: 16px;
@@ -974,9 +971,9 @@
         .app-container.mutasi-view #mutasi-screen { display: flex; }
 
         
-                #floating-widget-button {
-            position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%);
-            width: 95%; max-width: 385px; height: 154px; 
+        #floating-widget-button { 
+            position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%); 
+            width: 385px; height: 154px; 
             justify-content: center; align-items: center; 
             z-index: 1001; user-select: none; cursor: pointer; 
             -webkit-tap-highlight-color: transparent; 
