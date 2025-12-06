@@ -3,199 +3,218 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin</title>
+    <title>Admin Dashboard</title>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
     <style>
         :root {
-            --primary-color: #016EC3;
-            --secondary-color: #f0f2f5;
-            --danger-color: #d90429;
-            --dark-gray: #333;
-            --border-color: #ddd;
-            --warning-color: #ffc107;
+            /* TEMA DARK MODE PREMIUM */
+            --bg-body: #0f172a;       /* Dark Navy Background */
+            --bg-card: #1e293b;       /* Card Background */
+            --text-main: #f8fafc;     /* White Text */
+            --text-muted: #94a3b8;    /* Gray Text */
+            --primary-color: #3b82f6; /* Blue Primary */
+            --primary-hover: #2563eb;
+            --danger-color: #ef4444;  /* Red */
+            --success-color: #10b981; /* Green */
+            --warning-color: #f59e0b; /* Orange */
+            --border-color: #334155;
+            --radius: 12px;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         }
+
         * { box-sizing: border-box; }
+
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            background-color: var(--secondary-color);
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
-            align-items: center;
             min-height: 100vh;
         }
+
+        /* Container Utama */
         .container {
             width: 100%;
-            max-width: 900px;
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            max-width: 500px; /* Ukuran Mobile Friendly */
+            margin: 0 auto;
         }
-        #login-screen { padding: 40px; }
-        h2 {
-            text-align: center;
-            color: var(--dark-gray);
-            border-bottom: 2px solid var(--primary-color);
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-        h3 {
-            color: var(--dark-gray);
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 5px;
-            margin-top: 30px;
-        }
-        #admin-panel { display: none; padding: 20px; }
-        #tx-management-view { display: none; }
-        #tx-manager-header { font-size: 1.2rem; font-weight: 600; color: var(--primary-color); }
-        form {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        form .form-group { display: flex; flex-direction: column; }
-        form .full-width { grid-column: 1 / -1; }
-        form label {
-            font-weight: 600;
-            color: #555;
-            font-size: 0.9rem;
-            margin-bottom: 4px;
-        }
-        
-        /* *** PERUBAHAN DI SINI *** */
-        /* Styling untuk input mudah (date, time) ditambahkan kembali */
-        form input[type="text"],
-        form input[type="password"],
-        form input[type="number"],
-        form input[type="date"],
-        form input[type="time"] {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-        button {
-            padding: 12px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: var(--primary-color);
-            color: white;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.2s;
-            grid-column: 1 / -1;
-            margin-top: 10px;
-        }
-        button:hover { background-color: #015a9e; }
-        button:disabled { background-color: #ccc; cursor: wait; }
-        button.btn-danger { background-color: var(--danger-color); }
-        button.btn-danger:hover { background-color: #b00321; }
-        button.btn-secondary { background-color: #6c757d; }
-        button.btn-secondary:hover { background-color: #5a6268; }
-        button.btn-warning { background-color: var(--warning-color); color: #333; }
-        button.btn-warning:hover { background-color: #ffca2c; }
 
-        .list-container {
-            margin-top: 20px;
-            max-height: 300px;
-            overflow-y: auto;
+        /* --- LOGIN SCREEN --- */
+        #login-screen {
+            background-color: var(--bg-card);
+            padding: 40px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
             border: 1px solid var(--border-color);
-            border-radius: 5px;
+            margin-top: 50px;
         }
-        .list-item {
+
+        /* --- DASHBOARD & GENERAL STYLES --- */
+        #admin-panel { display: none; width: 100%; }
+        .view-section { display: none; animation: fadeIn 0.3s ease; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2, h3 { color: var(--text-main); margin: 0 0 20px 0; font-weight: 600; }
+        h2 { font-size: 1.5rem; text-align: center; }
+        h3 { font-size: 1.1rem; border-left: 4px solid var(--primary-color); padding-left: 10px; }
+
+        /* HEADER DENGAN TOMBOL KEMBALI/TAMBAH */
+        .header-nav {
             display: flex;
-            flex-direction: column; 
-            align-items: stretch; 
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+        }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-title { font-size: 1rem; font-weight: 600; margin: 0; }
+
+        /* FORM STYLES */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 5px; }
+        
+        input, select {
+            width: 100%;
             padding: 12px;
-            border-bottom: 1px solid #eee;
+            background-color: var(--bg-body);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: 0.2s;
         }
-        .list-item:last-child { border-bottom: none; }
-        .item-details { font-size: 0.9rem; color: #333; flex: 1; min-width: 0; }
-        .item-details span { 
-            display: block; 
-            overflow-wrap: break-word; 
+        input:focus { border-color: var(--primary-color); }
+
+        /* BUTTONS */
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
         }
-        .item-details .title { font-weight: 600; font-size: 1rem; }
-        .item-details .subtitle, .item-details .time { font-size: 0.8rem; color: #777; }
-        .item-details .amount { font-weight: 600; }
-        .item-actions { 
-            display: flex; 
-            flex-shrink: 0; 
-            gap: 8px; 
-            width: 100%; 
-            margin-top: 12px; 
-        }
-        .item-actions button, #back-to-users-btn {
-            padding: 8px 12px;
-            font-size: 0.8rem;
-            grid-column: auto;
-            margin-top: 0;
-            flex: 1; 
-        }
+        button:active { transform: scale(0.98); }
+
+        .btn-primary { background-color: var(--primary-color); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
         
-        .form-button-group {
-            grid-column: 1 / -1;
+        .btn-danger { background-color: var(--danger-color); color: white; }
+        .btn-warning { background-color: var(--warning-color); color: white; }
+        .btn-success { background-color: var(--success-color); color: white; }
+        
+        .btn-secondary { background-color: #475569; color: white; width: auto; padding: 8px 12px; }
+        .btn-icon { width: 35px; height: 35px; padding: 0; border-radius: 50%; }
+
+        /* STATS CARDS */
+        .stats-container {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background-color: var(--bg-card);
+            padding: 20px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
             display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .stat-icon {
+            width: 45px; height: 45px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        /* MENU GRID */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .menu-item {
+            background-color: var(--bg-card);
+            padding: 25px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             gap: 10px;
-            margin-top: 10px;
+            cursor: pointer;
+            transition: 0.2s;
         }
-        .form-button-group button {
-            margin-top: 0;
-            flex: 1;
+        .menu-item:hover { background-color: #263344; border-color: var(--primary-color); }
+        .menu-item i { font-size: 2rem; color: var(--primary-color); }
+        .menu-item span { font-size: 0.9rem; font-weight: 500; }
+
+        /* LIST ITEMS */
+        .list-container { max-height: 500px; overflow-y: auto; }
+        .list-item {
+            background-color: var(--bg-card);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 10px;
         }
+        .item-details { margin-bottom: 10px; }
+        .item-title { font-weight: 600; font-size: 1rem; color: var(--text-main); }
+        .item-sub { color: var(--text-muted); font-size: 0.85rem; }
+        .item-amount { font-weight: 600; font-size: 1.1rem; margin-top: 5px; display: block; }
         
-        .hidden {
-            display: none !important;
-        }
-        /* --- MODAL KONFIRMASI KUSTOM --- */
+        .item-actions { display: flex; gap: 8px; }
+        .item-actions button { padding: 8px; font-size: 0.8rem; }
+
+        /* MODAL MENGAMBANG */
         .modal-overlay {
             display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(3px);
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            padding: 20px;
         }
         .modal-content {
-            background-color: white;
+            background: var(--bg-card);
             padding: 25px;
-            border-radius: 8px;
-            width: 90%;
+            border-radius: 16px;
+            width: 100%;
             max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            animation: slideUp 0.3s ease;
         }
-        .modal-content h3 {
-            margin-top: 0;
-            color: var(--danger-color);
-            border-bottom: none;
-        }
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .modal-buttons button {
-            flex: 1;
-            margin-top: 0;
-        }
-        .btn-cancel { background-color: #6c757d; }
-        .btn-confirm { background-color: var(--danger-color); }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-
+        /* Utilities */
+        .text-green { color: var(--success-color); }
+        .text-red { color: var(--danger-color); }
     </style>
 </head>
 <body>
@@ -203,620 +222,484 @@
     <div class="container">
         
         <div id="login-screen">
-            <h2>Panel Admin</h2>
+            <h2 style="border-bottom: 2px solid var(--primary-color); padding-bottom:10px;">Admin Login</h2>
             <form id="admin-login-form">
-                <div class="form-group full-width">
-                    <label for="admin-username">Username Admin:</label>
+                <div class="form-group">
+                    <label>Username</label>
                     <input type="text" id="admin-username" value="admin" required>
                 </div>
-                <div class="form-group full-width">
-                    <label for="admin-password">Password Admin:</label>
+                <div class="form-group">
+                    <label>Password</label>
                     <input type="password" id="admin-password" value="admin" required>
                 </div>
-                <button type="submit" id="admin-login-btn">Login</button>
+                <button type="submit" id="admin-login-btn" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Masuk
+                </button>
             </form>
         </div>
 
         <div id="admin-panel">
             
-            <div id="user-management-view">
-                <h2>Manajemen Pengguna Aplikasi</h2>
-                
-                <h3 id="user-form-title">Buat Pengguna Baru</h3>
-                <form id="create-user-form">
-                    <div class="form-group full-width">
-                        <label for="login-username">Login Username (akan jadi Nama Profil):</label>
-                        <input type="text" id="login-username" placeholder="cth: donitata1717" required>
-                    </div>
-                     <div class="form-group">
-                        <label for="login-password">Login Password:</label>
-                        <input type="text" id="login-password" placeholder="cth: wasalamL050" required>
-                    </div>
-                     <div class="form-group">
-                        <label for="rekening-number">Nomor Rekening:</label>
-                        <input type="text" id="rekening-number" placeholder="cth: 5387 0102..." required>
-                    </div>
-                     <div class="form-group full-width">
-                        <label for="saldo-awal">Saldo Awal (Angka):</label>
-                        <input type="number" id="saldo-awal" placeholder="cth: 500000 (masukkan angka saja)" required>
-                    </div>
-                    
-                    <div class="form-button-group">
-                        <button type="submit" id="create-user-btn">Buat Pengguna</button>
-                        <button type="button" id="cancel-edit-user-btn" class="btn-secondary hidden">Batal Edit</button>
-                    </div>
-                </form>
+            <div id="dashboard-view" class="view-section">
+                <div class="header-nav">
+                    <span class="header-title">Dashboard</span>
+                    <button class="btn-danger" onclick="location.reload()" style="width: auto; padding: 5px 10px; font-size: 0.8rem;">
+                        <i class="fas fa-power-off"></i>
+                    </button>
+                </div>
 
-                <h3>Daftar Pengguna Aplikasi</h3>
-                <div id="user-list-container" class="list-container">
-                    <p style="text-align: center; padding: 20px; color: #888;">Memuat pengguna...</p>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <div style="font-size: 1.5rem; font-weight: 600;" id="stat-total-users">0</div>
+                            <div style="color: var(--text-muted); font-size: 0.8rem;">Total User</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-grid">
+                    <div class="menu-item" onclick="navToUserManagement()">
+                        <i class="fas fa-user-cog"></i>
+                        <span>Manajemen User</span>
+                    </div>
+                    <div class="menu-item" onclick="navToTxSelect()">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Manajemen Transaksi</span>
+                    </div>
                 </div>
             </div>
 
-            <div id="tx-management-view">
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                    <h2 id="tx-manager-header">Manajemen Transaksi</h2>
-                    <button id="back-to-users-btn" class="btn-secondary">Kembali ke Daftar Pengguna</button>
+            <div id="user-management-view" class="view-section">
+                <div class="header-nav">
+                    <div class="header-left">
+                        <button onclick="showDashboard()" class="btn-secondary btn-icon"><i class="fas fa-arrow-left"></i></button>
+                        <span class="header-title">User</span>
+                    </div>
+                    <button onclick="openUserModal()" class="btn-primary" style="width: auto; padding: 8px 12px;">
+                        <i class="fas fa-plus"></i> Baru
+                    </button>
                 </div>
 
-                <h3 id="tx-form-title">Tambah Transaksi Baru</h3>
-                <form id="tx-form">
-                    
-                    <div class="form-group">
-                        <label for="tx-date">Tanggal Transaksi:</label>
-                        <input type="date" id="tx-date" required>
+                <div class="form-group">
+                    <input type="text" id="search-user-crud" placeholder="🔍 Cari user..." onkeyup="filterUsers('user-list-crud', this.value)">
+                </div>
+
+                <div id="user-list-crud" class="list-container"></div>
+            </div>
+
+            <div id="tx-select-view" class="view-section">
+                <div class="header-nav">
+                    <div class="header-left">
+                        <button onclick="showDashboard()" class="btn-secondary btn-icon"><i class="fas fa-arrow-left"></i></button>
+                        <span class="header-title">Pilih User</span>
                     </div>
-                     <div class="form-group">
-                        <label for="tx-time">Waktu Transaksi:</label>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="search-user-tx" placeholder="🔍 Cari user untuk dikelola..." onkeyup="filterUsers('user-list-tx', this.value)">
+                </div>
+
+                <div id="user-list-tx" class="list-container"></div>
+            </div>
+
+            <div id="tx-management-view" class="view-section">
+                <div class="header-nav">
+                    <div class="header-left">
+                        <button onclick="navToTxSelect()" class="btn-secondary btn-icon"><i class="fas fa-arrow-left"></i></button>
+                        <div style="display:flex; flex-direction:column;">
+                            <span class="header-title">Transaksi</span>
+                            <span id="tx-username-display" style="font-size:0.75rem; color:var(--primary-color);">User</span>
+                        </div>
+                    </div>
+                </div>
+
+                <form id="tx-form" style="background:var(--bg-card); padding:15px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:20px;">
+                    <h4 style="margin-top:0; margin-bottom:15px; font-size:0.9rem; color:var(--text-muted);">Tambah/Edit Transaksi</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <input type="date" id="tx-date" required>
                         <input type="time" id="tx-time" required>
                     </div>
-                    <div class="form-group full-width">
-                        <label for="tx-desc">Deskripsi:</label>
-                        <input type="text" id="tx-desc" placeholder="cth: Beli Token PLN 50181090155" required>
+                    <div style="margin-top:10px;">
+                        <input type="text" id="tx-desc" placeholder="Deskripsi (cth: Beli Token)" required>
                     </div>
-                    <div class="form-group">
-                        <label for="tx-via">Via (Teks):</label>
-                        <input type="text" id="tx-via" placeholder="cth: via BRImo" required>
+                                        <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 0.8fr 1fr; gap:10px;">
+                        <input type="text" id="tx-via" placeholder="Via (cth: BRImo)" required>
+                        <select id="tx-type" style="background-color: var(--bg-body); border: 1px solid var(--border-color); color: var(--text-main); border-radius:8px; padding: 0 10px;">
+                            <option value="income">Pemasukan (+)</option>
+                            <option value="expense">Pengeluaran (-)</option>
+                        </select>
+                        <input type="number" id="tx-amount-number" placeholder="Nominal (Angka)" required>
                     </div>
-                     <div class="form-group">
-                        <label for="tx-amount-number">Jumlah (Angka):</label>
-                        <input type="number" id="tx-amount-number" placeholder="cth: -100000 (keluar) atau 50000 (masuk)" required>
-                    </div>
-                    
-                    <div class="form-button-group">
-                        <button type="submit" id="add-tx-btn">Tambah Transaksi</button>
-                        <button type="button" id="cancel-edit-tx-btn" class="btn-secondary hidden">Batal Edit</button>
+                    <div style="display:flex; gap:10px; margin-top:15px;">
+                        <button type="submit" id="add-tx-btn" class="btn-primary">Simpan</button>
+                        <button type="button" id="cancel-edit-tx-btn" class="btn-secondary hidden" onclick="resetTxForm()">Batal</button>
                     </div>
                 </form>
 
-                <h3>Daftar Transaksi Pengguna</h3>
-                <div id="transaction-list-container" class="list-container">
-                    </div>
+                <div id="transaction-list-container" class="list-container"></div>
             </div>
-        </div>
 
-    </div>
-
-        
-    <div id="confirmation-modal" class="modal-overlay">
+        </div> </div> <div id="user-form-modal" class="modal-overlay">
         <div class="modal-content">
-            <h3>Konfirmasi Hapus</h3>
-            <p id="modal-message">Apakah Anda yakin?</p>
-            <div class="modal-buttons">
-                <button id="btn-modal-cancel" class="btn-cancel">Batal</button>
-                <button id="btn-modal-confirm" class="btn-confirm">Ya, Hapus</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h3 style="margin:0; border:none; padding:0;">User Form</h3>
+                <button onclick="closeUserModal()" class="btn-secondary btn-icon"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="create-user-form">
+                <div class="form-group"><input type="text" id="login-username" placeholder="Username (cth: donitata)" required></div>
+                <div class="form-group"><input type="text" id="login-password" placeholder="Password" required></div>
+                <div class="form-group"><input type="text" id="rekening-number" placeholder="No. Rekening" required></div>
+                <div class="form-group"><input type="number" id="saldo-awal" placeholder="Saldo Awal (Angka)" required></div>
+                
+                <button type="submit" id="create-user-btn" class="btn-primary">Simpan Data</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="confirmation-modal" class="modal-overlay">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--warning-color); margin-bottom: 15px;"></i>
+            <h3 style="border:none; padding:0; text-align: center;">Konfirmasi</h3>
+            <p id="modal-message" style="color: var(--text-muted); margin-bottom: 25px;">Yakin ingin melakukan ini?</p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-modal-cancel" class="btn-secondary">Batal</button>
+                <button id="btn-modal-confirm" class="btn-danger">Ya, Lanjutkan</button>
             </div>
         </div>
     </div>
 
-
-<script>
-        // --- KONFIGURASI ADMIN ---
+    <script>
+        // --- KONFIGURASI ---
         const ADMIN_USERNAME = "admin";
         const ADMIN_PASSWORD = "admin";
         
-        // --- KONFIGURASI FIREBASE ---
         const firebaseConfig = {
           apiKey: "AIzaSyD2bI8R7u6KZW3gB_Pb0TVmDHkxG3dqu9A",
           authDomain: "brimoku-e49d0.firebaseapp.com",
           projectId: "brimoku-e49d0",
           storageBucket: "brimoku-e49d0.firebasestorage.app",
           messagingSenderId: "1093618052793",
-          appId: "1:1093618052793:web:d2a804ff78e2f4156bf568",
-          measurementId: "G-PLXZ3YB3KC"
+          appId: "1:1093618052793:web:d2a804ff78e2f4156bf568"
         };
         const appId = firebaseConfig.projectId;
 
-        // --- Variabel Global ---
-        let db;
-        let appUsersCollectionRef;
-        let selectedUserId = null;
-        let unsubscribeTxListener = null;
-        let editingUserId = null; 
-        let editingTxId = null; 
+        // Vars
+        let db, appUsersCollectionRef;
+        let selectedUserId = null, editingUserId = null, editingTxId = null;
+        let unsubscribeList = null, unsubscribeTxListener = null;
 
-        // --- Referensi DOM ---
+        // DOM Elements
+        const views = document.querySelectorAll('.view-section');
         const loginScreen = document.getElementById('login-screen');
         const adminPanel = document.getElementById('admin-panel');
-        const adminLoginForm = document.getElementById('admin-login-form');
-        const adminLoginBtn = document.getElementById('admin-login-btn');
         
-        const userManagementView = document.getElementById('user-management-view');
-        const userFormTitle = document.getElementById('user-form-title');
-        const createUserForm = document.getElementById('create-user-form');
-        const createUserBtn = document.getElementById('create-user-btn');
-        const cancelEditUserBtn = document.getElementById('cancel-edit-user-btn');
-        const userListContainer = document.getElementById('user-list-container');
-        
-        const txManagementView = document.getElementById('tx-management-view');
-        const txManagerHeader = document.getElementById('tx-manager-header');
-        const backToUsersBtn = document.getElementById('back-to-users-btn');
-        const txFormTitle = document.getElementById('tx-form-title');
-        const txForm = document.getElementById('tx-form');
-        const addTxBtn = document.getElementById('add-tx-btn');
-        const cancelEditTxBtn = document.getElementById('cancel-edit-tx-btn');
-        const transactionListContainer = document.getElementById('transaction-list-container');
-        // --- LOGIKA MODAL KONFIRMASI ---
-        const confirmationModal = document.getElementById('confirmation-modal');
-        const modalMessage = document.getElementById('modal-message');
-        const btnModalCancel = document.getElementById('btn-modal-cancel');
-        const btnModalConfirm = document.getElementById('btn-modal-confirm');
-        
-        let pendingDeleteAction = null; // Menyimpan fungsi yang akan dijalankan jika dikonfirmasi
-
-        function showConfirmation(message, actionCallback) {
-            modalMessage.textContent = message;
-            pendingDeleteAction = actionCallback;
-            confirmationModal.style.display = 'flex';
-        }
-
-        function closeConfirmation() {
-            pendingDeleteAction = null;
-            confirmationModal.style.display = 'none';
-        }
-
-        btnModalCancel.addEventListener('click', closeConfirmation);
-        
-        btnModalConfirm.addEventListener('click', async () => {
-            if (pendingDeleteAction) {
-                btnModalConfirm.textContent = 'Memproses...';
-                btnModalConfirm.disabled = true;
-                await pendingDeleteAction();
-                btnModalConfirm.textContent = 'Ya, Hapus';
-                btnModalConfirm.disabled = false;
-            }
-            closeConfirmation();
+        // --- 1. INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('admin-login-form').addEventListener('submit', handleLogin);
+            document.getElementById('create-user-form').addEventListener('submit', handleUserSubmit);
+            document.getElementById('tx-form').addEventListener('submit', handleTxSubmit);
+            
+            // Modal Logic
+            const confirmModal = document.getElementById('confirmation-modal');
+            let confirmAction = null;
+            
+            window.showConfirmation = (msg, action) => {
+                document.getElementById('modal-message').textContent = msg;
+                confirmAction = action;
+                confirmModal.style.display = 'flex';
+            };
+            
+            document.getElementById('btn-modal-cancel').onclick = () => confirmModal.style.display = 'none';
+            document.getElementById('btn-modal-confirm').onclick = async () => {
+                if(confirmAction) await confirmAction();
+                confirmModal.style.display = 'none';
+            };
         });
 
-        
-        // --- 1. LOGIN ADMIN ---
-        async function handleAdminLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
-            const username = document.getElementById('admin-username').value;
-            const password = document.getElementById('admin-password').value;
+            const u = document.getElementById('admin-username').value;
+            const p = document.getElementById('admin-password').value;
+            const btn = document.getElementById('admin-login-btn');
 
-            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                adminLoginBtn.disabled = true;
-                adminLoginBtn.textContent = 'Login Berhasil. Menghubungkan ke Firebase...';
-                await initFirebase();
+            if(u === ADMIN_USERNAME && p === ADMIN_PASSWORD) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    const auth = firebase.auth();
+                    db = firebase.firestore();
+                    await auth.signInAnonymously();
+                    
+                    appUsersCollectionRef = db.collection("artifacts").doc(appId).collection("app_users");
+                    
+                    loginScreen.style.display = 'none';
+                    adminPanel.style.display = 'block';
+                    showDashboard();
+                } catch(err) {
+                    alert("Koneksi Firebase Gagal: " + err.message);
+                    btn.innerHTML = 'Coba Lagi';
+                }
             } else {
-                alert("Username atau Password Admin salah!");
+                alert("Username/Password Salah!");
             }
         }
 
-        // --- 2. Inisialisasi Firebase ---
-        async function initFirebase() {
-            try {
-                firebase.initializeApp(firebaseConfig);
-                const auth = firebase.auth();
-                db = firebase.firestore();
-                await auth.signInAnonymously();
-                console.log("Admin: Autentikasi Anonim Berhasil.");
-                appUsersCollectionRef = db.collection("artifacts").doc(appId).collection("app_users");
-                loginScreen.style.display = 'none';
-                adminPanel.style.display = 'block';
-                listenForAppUsers();
-            } catch (error) {
-                console.error("Admin: Error inisialisasi Firebase:", error);
-                adminLoginBtn.textContent = 'Gagal terhubung ke Firebase. Coba lagi.';
-                adminLoginBtn.disabled = false;
-            }
+        // --- 2. NAVIGATION ---
+        function switchView(viewId) {
+            views.forEach(v => v.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
         }
 
-        // --- 3. MANAJEMEN PENGGUNA ---
-        // (Tidak ada perubahan di bagian ini, sama seperti sebelumnya)
-        async function handleCreateUserSubmit(e) {
-            e.preventDefault();
-            createUserBtn.disabled = true;
-            const loginUsername = document.getElementById('login-username').value;
-            const saldoAwalValue = parseInt(document.getElementById('saldo-awal').value, 10) || 0;
-            const data = {
-                login_username: loginUsername,
-                login_password: document.getElementById('login-password').value,
-                profile_username: loginUsername,
-                rekeningNumber: document.getElementById('rekening-number').value,
-                saldo_awal: saldoAwalValue 
-            };
-            try {
-                if (editingUserId) {
-                    createUserBtn.textContent = 'Menyimpan...';
-                    const userDocRef = appUsersCollectionRef.doc(editingUserId);
-                    await userDocRef.update(data); 
-                    console.log("Admin: Pengguna diperbarui:", editingUserId);
-                } else {
-                    createUserBtn.textContent = 'Membuat...';
-                    await appUsersCollectionRef.add(data);
-                    console.log("Admin: Pengguna baru dibuat.");
-                }
-                resetUserForm();
-            } catch (error) {
-                console.error("Admin: Error menyimpan pengguna:", error);
-                alert("Gagal menyimpan pengguna!");
-            }
-        }
-        async function handleEditUserClick(e) {
-            editingUserId = e.target.dataset.id;
-            try {
-                const userDocRef = appUsersCollectionRef.doc(editingUserId);
-                const docSnap = await userDocRef.get();
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-                    document.getElementById('login-username').value = data.login_username || '';
-                    document.getElementById('login-password').value = data.login_password || '';
-                    document.getElementById('rekening-number').value = data.rekeningNumber || '';
-                    document.getElementById('saldo-awal').value = data.saldo_awal || 0;
-                    userFormTitle.textContent = 'Edit Pengguna';
-                    createUserBtn.textContent = 'Simpan Perubahan';
-                    cancelEditUserBtn.classList.remove('hidden');
-                    window.scrollTo(0, 0); 
-                } else {
-                    editingUserId = null;
-                }
-            } catch (error) {
-                editingUserId = null;
-            }
-        }
-        function resetUserForm() {
-            editingUserId = null;
-            createUserForm.reset();
-            userFormTitle.textContent = 'Buat Pengguna Baru';
-            createUserBtn.textContent = 'Buat Pengguna';
-            createUserBtn.disabled = false;
-            cancelEditUserBtn.classList.add('hidden');
-        }
-        function listenForAppUsers() {
-            const q = appUsersCollectionRef.orderBy("login_username");
-            q.onSnapshot((querySnapshot) => {
-                if (querySnapshot.empty) {
-                    userListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: #888;">Belum ada pengguna aplikasi.</p>';
-                    return;
-                }
-                userListContainer.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const user = doc.data();
-                    const userId = doc.id;
-                    const item = document.createElement('div');
-                    item.className = 'list-item';
-                    item.innerHTML = `
-                        <div class="item-details">
-                            <span class="title">${user.login_username}</span>
-                            <span class="subtitle">Rekening: ${user.rekeningNumber}</span>
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-warning btn-edit-user" data-id="${userId}">Edit</button>
-                            <button class="btn-secondary" data-id="${userId}" data-username="${user.login_username}">Kelola Transaksi</button>
-                            <button class="btn-danger btn-delete-user" data-id="${userId}">Hapus</button>
-                        </div>
-                    `;
-                    userListContainer.appendChild(item);
+        window.showDashboard = () => {
+            switchView('dashboard-view');
+            // Update stats sekilas (ambil snapshot once)
+            if(appUsersCollectionRef) {
+                appUsersCollectionRef.get().then(snap => {
+                    document.getElementById('stat-total-users').textContent = snap.size;
                 });
-                userListContainer.querySelectorAll('.btn-edit-user').forEach(btn => btn.addEventListener('click', handleEditUserClick));
-                userListContainer.querySelectorAll('.btn-secondary').forEach(btn => btn.addEventListener('click', handleManageUser));
-                userListContainer.querySelectorAll('.btn-danger').forEach(btn => btn.addEventListener('click', handleDeleteUser));
-            }, (error) => {
-                userListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Gagal memuat pengguna.</p>';
-            });
-        }
-                        async function handleDeleteUser(e) {
-            const userId = e.target.dataset.id;
-            
-            showConfirmation(
-                `Yakin ingin menghapus pengguna ini (ID: ${userId})? Data akan hilang permanen.`,
-                async () => {
-                    try {
-                        await appUsersCollectionRef.doc(userId).delete();
-                        console.log("User dihapus via modal");
-                    } catch (error) {
-                        console.error(error);
-                        alert("Gagal menghapus pengguna!");
-                    }
-                }
-            );
-        }
-        // --- AKHIR BAGIAN MANAJEMEN PENGGUNA ---
-
-
-        // --- 4. MANAJEMEN TRANSAKSI (PER PENGGUNA) ---
-
-        function handleManageUser(e) {
-            selectedUserId = e.target.dataset.id;
-            const username = e.target.dataset.username;
-            txManagerHeader.textContent = `Mengelola Transaksi untuk: ${username}`;
-            userManagementView.style.display = 'none';
-            txManagementView.style.display = 'block';
-            listenForTransactions(selectedUserId);
-        }
-
-        function handleBackToUsers() {
-            if (unsubscribeTxListener) unsubscribeTxListener();
-            unsubscribeTxListener = null;
-            selectedUserId = null;
-            transactionListContainer.innerHTML = '';
-            resetTxForm(); 
-            txManagementView.style.display = 'none';
-            userManagementView.style.display = 'block';
-        }
-        
-        // Buat atau Update Transaksi
-        async function handleTxFormSubmit(e) {
-            e.preventDefault();
-            if (!selectedUserId) return;
-            addTxBtn.disabled = true;
-
-            // 1. Ambil nilai input mudah (cth: "2025-02-28" dan "21:37")
-            const dateInput = document.getElementById('tx-date').value;
-            const timeInput = document.getElementById('tx-time').value;
-
-            // 2. Konversi ke format teks yang dibutuhkan index.html
-            const formattedDate = formatDateToText(dateInput);
-            const formattedTime = formatTimeToText(timeInput);
-            
-            // 3. Ambil data angka
-            const amountNum = parseInt(document.getElementById('tx-amount-number').value, 10) || 0;
-            const formattedAmountStr = formatCurrencyString(amountNum);
-
-            // 4. Siapkan data untuk Firebase (menggunakan format teks)
-            const newTxData = {
-                date: formattedDate, // Cth: "28 Feb 2025"
-                time: formattedTime, // Cth: "21:37:05 WIB"
-                desc: document.getElementById('tx-desc').value,
-                via: document.getElementById('tx-via').value,
-                amount: formattedAmountStr, 
-                amount_number: amountNum     
-            };
-            
-            const txCollectionRef = appUsersCollectionRef.doc(selectedUserId).collection("transactions");
-
-            try {
-                if (editingTxId) {
-                    addTxBtn.textContent = 'Menyimpan...';
-                    await txCollectionRef.doc(editingTxId).update(newTxData); 
-                    console.log("Admin: Transaksi diperbarui:", editingTxId);
-                } else {
-                    addTxBtn.textContent = 'Menambahkan...';
-                    newTxData.timestamp = firebase.firestore.FieldValue.serverTimestamp();
-                    await txCollectionRef.add(newTxData);
-                    console.log("Admin: Transaksi baru ditambahkan.");
-                }
-                resetTxForm(); 
-            } catch (error) {
-                console.error("Admin: Error menambah/update transaksi:", error);
-                alert("Gagal menyimpan transaksi!");
             }
-        }
-
-        // Klik tombol Edit Transaksi
-        async function handleEditTxClick(e) {
-            editingTxId = e.target.dataset.id;
-            if (!selectedUserId || !editingTxId) return;
-
-            console.log("Admin: Mulai mengedit transaksi:", editingTxId);
-            
-            try {
-                const txDocRef = appUsersCollectionRef.doc(selectedUserId).collection("transactions").doc(editingTxId);
-                const docSnap = await txDocRef.get();
-                if (docSnap.exists) {
-                    const data = docSnap.data();
-                    
-                    // 1. Ambil data teks dari Firebase (cth: "28 Feb 2025")
-                    const textDate = data.date || '';
-                    const textTime = data.time || '';
-
-                    // 2. Konversi kembali ke format input (cth: "2025-02-28")
-                    const formDate = parseTextToDate(textDate);
-                    const formTime = parseTextToTime(textTime);
-
-                    // 3. Isi form dengan format input
-                    document.getElementById('tx-date').value = formDate;
-                    document.getElementById('tx-time').value = formTime;
-                    
-                    document.getElementById('tx-desc').value = data.desc || '';
-                    document.getElementById('tx-via').value = data.via || '';
-                    document.getElementById('tx-amount-number').value = data.amount_number || 0;
-                    
-                    txFormTitle.textContent = 'Edit Transaksi';
-                    addTxBtn.textContent = 'Simpan Perubahan';
-                    cancelEditTxBtn.classList.remove('hidden');
-                    window.scrollTo(0, 0); 
-                } else {
-                    console.error("Dokumen transaksi tidak ditemukan!");
-                    editingTxId = null;
-                }
-            } catch (error) {
-                console.error("Gagal mengambil data transaksi:", error);
-                editingTxId = null;
-            }
-        }
-
-        // Reset Form Transaksi
-        function resetTxForm() {
-            editingTxId = null;
-            txForm.reset();
-            txFormTitle.textContent = 'Tambah Transaksi Baru';
-            addTxBtn.textContent = 'Tambah Transaksi';
-            addTxBtn.disabled = false;
-            cancelEditTxBtn.classList.add('hidden');
-        }
-
-        // Tampilkan Daftar Transaksi
-        function listenForTransactions(userId) {
-            const txCollectionRef = appUsersCollectionRef.doc(userId).collection("transactions");
-            const q = txCollectionRef.orderBy("timestamp", "desc");
-            
-            if (unsubscribeTxListener) unsubscribeTxListener();
-
-            unsubscribeTxListener = q.onSnapshot((querySnapshot) => {
-                if (querySnapshot.empty) {
-                    transactionListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: #888;">Belum ada transaksi.</p>';
-                    return;
-                }
-                transactionListContainer.innerHTML = '';
-                querySnapshot.forEach((doc) => {
-                    const tx = doc.data();
-                    const txId = doc.id;
-                    let amountColor = (tx.amount.startsWith('+')) ? 'green' : 'var(--danger-color)';
-                    if (tx.amount.startsWith('Rp0,00')) amountColor = '#333';
-
-                    const item = document.createElement('div');
-                    item.className = 'list-item';
-                    item.innerHTML = `
-                        <div class="item-details">
-                            <span class="title">${tx.desc}</span>
-                            <span class="amount" style="color: ${amountColor};">${tx.amount}</span>
-                            <span class="time">${tx.date} - ${tx.time}</span>
-                        </div>
-                        <div class="item-actions">
-                            <button class="btn-warning btn-edit-tx" data-id="${txId}">Edit</button>
-                            <button class="btn-danger btn-delete-tx" data-id="${txId}">Hapus</button>
-                        </div>
-                    `;
-                    transactionListContainer.appendChild(item);
-                });
-                transactionListContainer.querySelectorAll('.btn-edit-tx').forEach(btn => btn.addEventListener('click', handleEditTxClick));
-                transactionListContainer.querySelectorAll('.btn-danger').forEach(btn => btn.addEventListener('click', handleDeleteTransaction));
-            }, (error) => {
-                console.error("Admin: Error listening to transactions:", error);
-                transactionListContainer.innerHTML = '<p style="text-align: center; padding: 20px; color: red;">Gagal memuat transaksi.</p>';
-            });
-        }
-        
-        // Hapus Transaksi
-                // Hapus Transaksi
-                // Hapus Transaksi
-        async function handleDeleteTransaction(e) {
-            const txId = e.target.dataset.id;
-            if (!selectedUserId || !txId) return;
-
-            showConfirmation(
-                `Yakin ingin menghapus transaksi ini?`,
-                async () => {
-                    try {
-                        await appUsersCollectionRef.doc(selectedUserId).collection("transactions").doc(txId).delete();
-                        if (editingTxId === txId) {
-                            resetTxForm();
-                        }
-                    } catch (error) {
-                        console.error(error);
-                        alert("Gagal menghapus transaksi!");
-                    }
-                }
-            );
-        }
-        
-        // --- 5. FUNGSI FORMATTING & KONVERSI BARU ---
-        
-        const textMonths = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Ags", "Sep", "Okt", "Nov", "Des"];
-        const monthParseMap = {
-            "Jan": "01", "Feb": "02", "Mar": "03", "Apr": "04", "Mei": "05", "Jun": "06", 
-            "Jul": "07", "Ags": "08", "Sep": "09", "Okt": "10", "Nov": "11", "Des": "12"
         };
 
-        /**
-         * Mengubah "2025-02-28" (dari <input type="date">) 
-         * menjadi "28 Feb 2025" (format untuk Firebase)
-         */
-        function formatDateToText(dateString) {
-            if (!dateString) return "";
+        window.navToUserManagement = () => {
+            switchView('user-management-view');
+            listenUsers('user-list-crud', 'crud');
+        };
+
+        window.navToTxSelect = () => {
+            switchView('tx-select-view');
+            listenUsers('user-list-tx', 'tx');
+        };
+
+        // --- 3. USER MANAGEMENT LOGIC ---
+        function listenUsers(containerId, mode) {
+            const container = document.getElementById(containerId);
+            if(unsubscribeList) unsubscribeList();
+
+            unsubscribeList = appUsersCollectionRef.orderBy("login_username").onSnapshot(snap => {
+                if(snap.empty) {
+                    container.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Belum ada user.</p>';
+                    return;
+                }
+                container.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    const el = document.createElement('div');
+                    el.className = 'list-item';
+                    
+                    let btns = '';
+                    if(mode === 'crud') {
+                        btns = `
+                            <button class="btn-warning" onclick="editUser('${doc.id}')"><i class="fas fa-edit"></i></button>
+                            <button class="btn-danger" onclick="deleteUser('${doc.id}')"><i class="fas fa-trash"></i></button>
+                        `;
+                    } else {
+                        btns = `<button class="btn-primary" onclick="manageTx('${doc.id}', '${d.login_username}')">Kelola Transaksi</button>`;
+                    }
+
+                    el.innerHTML = `
+                        <div class="item-details">
+                            <div class="item-title">${d.login_username}</div>
+                            <div class="item-sub">${d.rekeningNumber}</div>
+                        </div>
+                        <div class="item-actions">${btns}</div>
+                    `;
+                    container.appendChild(el);
+                });
+            });
+        }
+
+        window.filterUsers = (id, term) => {
+            const items = document.getElementById(id).getElementsByClassName('list-item');
+            Array.from(items).forEach(item => {
+                const txt = item.innerText.toLowerCase();
+                item.style.display = txt.includes(term.toLowerCase()) ? 'block' : 'none';
+            });
+        };
+
+        // Modal User Form
+        const userModal = document.getElementById('user-form-modal');
+        window.openUserModal = () => {
+            document.getElementById('create-user-form').reset();
+            editingUserId = null;
+            document.getElementById('create-user-btn').textContent = 'Simpan User';
+            userModal.style.display = 'flex';
+        };
+        window.closeUserModal = () => userModal.style.display = 'none';
+
+        async function handleUserSubmit(e) {
+            e.preventDefault();
+            const btn = document.getElementById('create-user-btn');
+            btn.disabled = true; btn.textContent = 'Menyimpan...';
+
+            const data = {
+                login_username: document.getElementById('login-username').value,
+                login_password: document.getElementById('login-password').value,
+                rekeningNumber: document.getElementById('rekening-number').value,
+                saldo_awal: parseInt(document.getElementById('saldo-awal').value) || 0,
+                profile_username: document.getElementById('login-username').value
+            };
+
             try {
-                // Tambahkan T00:00:00 untuk menghindari masalah zona waktu
-                const date = new Date(dateString + 'T00:00:00'); 
-                const day = date.getDate();
-                const monthName = textMonths[date.getMonth()];
-                const year = date.getFullYear();
-                return `${day} ${monthName} ${year}`;
-            } catch (e) {
-                return dateString; // Fallback
+                if(editingUserId) {
+                    await appUsersCollectionRef.doc(editingUserId).update(data);
+                } else {
+                    await appUsersCollectionRef.add(data);
+                }
+                closeUserModal();
+            } catch(err) {
+                alert("Error: " + err.message);
+            }
+            btn.disabled = false;
+        }
+
+        window.editUser = async (id) => {
+            editingUserId = id;
+            const doc = await appUsersCollectionRef.doc(id).get();
+            const d = doc.data();
+            document.getElementById('login-username').value = d.login_username;
+            document.getElementById('login-password').value = d.login_password;
+            document.getElementById('rekening-number').value = d.rekeningNumber;
+            document.getElementById('saldo-awal').value = d.saldo_awal;
+            
+            document.getElementById('create-user-btn').textContent = 'Update User';
+            userModal.style.display = 'flex';
+        };
+
+        window.deleteUser = (id) => {
+            showConfirmation("Hapus user ini? Data transaksi juga akan hilang.", async () => {
+                await appUsersCollectionRef.doc(id).delete();
+            });
+        };
+
+        // --- 4. TRANSACTION MANAGEMENT ---
+        window.manageTx = (userId, username) => {
+            selectedUserId = userId;
+            document.getElementById('tx-username-display').textContent = username;
+            switchView('tx-management-view');
+            resetTxForm();
+            listenTx(userId);
+        };
+
+        function listenTx(userId) {
+            const container = document.getElementById('transaction-list-container');
+            if(unsubscribeTxListener) unsubscribeTxListener();
+            
+            unsubscribeTxListener = appUsersCollectionRef.doc(userId).collection('transactions')
+                .orderBy('timestamp', 'desc')
+                .onSnapshot(snap => {
+                    if(snap.empty) {
+                        container.innerHTML = '<p style="text-align:center;color:#888;padding:20px;">Belum ada transaksi.</p>';
+                        return;
+                    }
+                    container.innerHTML = '';
+                    snap.forEach(doc => {
+                        const t = doc.data();
+                        const color = t.amount.includes('-') ? 'var(--danger-color)' : 'var(--success-color)';
+                        
+                        const el = document.createElement('div');
+                        el.className = 'list-item';
+                        el.innerHTML = `
+                            <div class="item-details">
+                                <div class="item-title">${t.desc}</div>
+                                <span class="item-amount" style="color:${color}">${t.amount}</span>
+                                <div class="item-sub">${t.date} • ${t.time}</div>
+                            </div>
+                            <div class="item-actions">
+                                <button class="btn-warning" onclick="editTx('${doc.id}')"><i class="fas fa-edit"></i></button>
+                                <button class="btn-danger" onclick="deleteTx('${doc.id}')"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `;
+                        container.appendChild(el);
+                    });
+                });
+        }
+
+                async function handleTxSubmit(e) {
+            e.preventDefault();
+            if(!selectedUserId) return;
+            
+            // Ambil Data
+            const dateIn = document.getElementById('tx-date').value;
+            const timeIn = document.getElementById('tx-time').value;
+            const type = document.getElementById('tx-type').value;
+            let num = parseInt(document.getElementById('tx-amount-number').value) || 0;
+            
+            // LOGIKA BARU: Jika Pengeluaran, jadikan negatif
+            if (type === 'expense') {
+                num = Math.abs(num) * -1;
+            } else {
+                num = Math.abs(num);
+            }
+            
+            // Format Date Text (ex: 20 Aug 2025)
+            const dObj = new Date(dateIn);
+            const months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+            const dateTxt = `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
+            
+            // Format Rupiah
+            const rp = (num < 0 ? "- Rp" : "+ Rp") + Math.abs(num).toLocaleString('id-ID') + ",00";
+
+            const data = {
+                date: dateTxt,
+                time: timeIn + " WIB",
+                desc: document.getElementById('tx-desc').value,
+                via: document.getElementById('tx-via').value,
+                amount: rp,
+                amount_number: num,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const ref = appUsersCollectionRef.doc(selectedUserId).collection('transactions');
+                if(editingTxId) {
+                    delete data.timestamp; // Jangan update timestamp pembuatan
+                    await ref.doc(editingTxId).update(data);
+                } else {
+                    await ref.add(data);
+                }
+                resetTxForm();
+            } catch(err) {
+                alert("Gagal simpan transaksi: " + err.message);
             }
         }
 
-        /**
-         * Mengubah "21:37" (dari <input type="time">)
-         * menjadi "21:37:05 WIB" (format untuk Firebase)
-         */
-        function formatTimeToText(timeString) {
-            if (!timeString) return "";
-            // Menambahkan detik :05 (seperti placeholder) dan WIB
-            return `${timeString}:05 WIB`;
-        }
-        
-        /**
-         * Mengubah "28 Feb 2025" (dari Firebase)
-         * menjadi "2025-02-28" (format untuk <input type="date">)
-         */
-        function parseTextToDate(textDate) {
-            if (!textDate) return "";
-            try {
-                const parts = textDate.split(" "); // ["28", "Feb", "2025"]
-                if (parts.length !== 3) return "";
-                
-                const day = parts[0].padStart(2, '0');
-                const month = monthParseMap[parts[1]];
-                const year = parts[2];
-                
-                if (!month) return ""; // Gagal parse bulan
-                
-                return `${year}-${month}-${day}`;
-            } catch (e) {
-                return ""; // Gagal
-            }
-        }
+                window.editTx = async (txId) => {
+            editingTxId = txId;
+            const doc = await appUsersCollectionRef.doc(selectedUserId).collection('transactions').doc(txId).get();
+            const d = doc.data();
 
-        /**
-         * Mengubah "21:37:05 WIB" (dari Firebase)
-         * menjadi "21:37" (format untuk <input type="time">)
-         */
-        function parseTextToTime(textTime) {
-             if (!textTime) return "";
-             try {
-                const parts = textTime.split(":"); // ["21", "37", "05 WIB"]
-                if (parts.length < 2) return "";
-                return `${parts[0]}:${parts[1]}`;
-             } catch(e) {
-                return "";
-             }
-        }
+            document.getElementById('tx-desc').value = d.desc;
+            document.getElementById('tx-via').value = d.via;
+            
+            // LOGIKA BARU: Set Selector berdasarkan positif/negatif
+            const rawNum = d.amount_number;
+            document.getElementById('tx-amount-number').value = Math.abs(rawNum); // Tampilkan angka positif saja di input
+            document.getElementById('tx-type').value = rawNum < 0 ? 'expense' : 'income';
+            
+            // Tombol jadi Simpan Perubahan
+            document.getElementById('add-tx-btn').textContent = 'Update';
+            document.getElementById('cancel-edit-tx-btn').classList.remove('hidden');
+            document.querySelector('#tx-form h4').textContent = 'Edit Transaksi';
+            window.scrollTo(0,0);
+        };
 
-        // Fungsi format mata uang (tidak berubah)
-        function formatCurrencyString(number) {
-            if (isNaN(number) || number === null) number = 0;
-            const isNegative = number < 0;
-            const prefix = isNegative ? '- Rp' : '+ Rp';
-            const absoluteValue = Math.abs(number);
-            const formattedValue = absoluteValue.toLocaleString('id-ID');
-            const finalString = `${prefix}${formattedValue},00`;
-            if (number === 0) return 'Rp0,00';
-            return finalString;
-        }
+        window.deleteTx = (txId) => {
+            showConfirmation("Hapus transaksi ini?", async () => {
+                await appUsersCollectionRef.doc(selectedUserId).collection('transactions').doc(txId).delete();
+            });
+        };
 
-        // --- PASANG EVENT LISTENERS ---
-        document.addEventListener('DOMContentLoaded', () => {
-            adminLoginForm.addEventListener('submit', handleAdminLogin);
-            createUserForm.addEventListener('submit', handleCreateUserSubmit);
-            cancelEditUserBtn.addEventListener('click', resetUserForm);
-            txForm.addEventListener('submit', handleTxFormSubmit);
-            cancelEditTxBtn.addEventListener('click', resetTxForm);
-            backToUsersBtn.addEventListener('click', handleBackToUsers);
-        });
+        window.resetTxForm = () => {
+            editingTxId = null;
+            document.getElementById('tx-form').reset();
+            document.getElementById('add-tx-btn').textContent = 'Simpan';
+            document.getElementById('cancel-edit-tx-btn').classList.add('hidden');
+            document.querySelector('#tx-form h4').textContent = 'Tambah Transaksi Baru';
+        };
 
     </script>
 </body>
