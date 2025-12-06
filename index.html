@@ -234,16 +234,15 @@
         }
 
         /* Mengatur dasar halaman */
-        body {
+                body {
             margin: 0;
             padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #333;
-            /* --- PERUBAHAN 2: Menerapkan font kustom ke body --- */
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            background-color: #f0f2f5;
             font-family: 'BRIku', Arial, Helvetica, sans-serif;
+            overflow: hidden;
         }
 
         /* --- CSS Layar Loading --- */
@@ -280,21 +279,20 @@
         }
         
         /* DIUBAH: Posisi Tombol "Login" ke tengah bawah */
-        #welcome-button {
+                #welcome-button {
             position: absolute;
-            bottom: 80px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            
-            /* --- PERUBAHAN: Menggunakan gambar login2.jpg --- */
-            padding: 0; 
-            background-image: url('login2.jpg'); /* <-- INI ADALAH KODE YANG BENAR */
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0;
+            background-image: url('login2.jpg');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
             background-color: transparent;
             border: none;
-            width: 385px; /* Lebar disesuaikan agar pas */
+            width: 90%;
+            max-width: 385px;
             height: 73px; /* Tinggi disesuaikan (rasio aspek 776x118) */
             /* --- Akhir Perubahan --- */
             
@@ -332,10 +330,10 @@
         }
         
         /* DIUBAH: #login-screen sekarang menjadi konten modal */
-        #login-screen {
-            width: 390px;
+                #login-screen {
+            width: 100%;
             position: relative;
-            overflow: hidden; 
+            overflow: hidden;
             background-color: #f0f2f5; 
             display: flex;
             flex-direction: column;
@@ -481,24 +479,25 @@
 
 
         /* Kontainer utama aplikasi */
-        .app-container {
-            width: 390px;
-            height: 844px;
+                .app-container {
+            width: 100%;
+            height: 100%;
             position: relative;
-            overflow: hidden; 
-            border: 1px solid #ccc;
-            background-color: #f0f2f5; 
-            display: none; /* Ditampilkan setelah login berhasil */
+            overflow: hidden;
+            border: none;
+            background-color: #f0f2f5;
+            display: none;
         }
 
         /* --- Kontainer untuk Layar Beranda --- */
-        #home-screen {
+                #home-screen {
             width: 100%;
             height: 100%;
             background-image: url('baground.jpg');
-            background-size: contain; 
-            background-position: top; 
-            background-repeat: no-repeat; 
+            background-size: 100% auto;
+            background-position: top center;
+            background-repeat: no-repeat;
+            background-color: #f0f2f5;
         }
 
         /* Konten kustom kita (Username dan Saldo) */
@@ -922,11 +921,11 @@
         #processing-estat-overlay.show {
             display: flex;
             opacity: 1;
-        }        #processing-estat-modal {
+        }                #processing-estat-modal {
             background-color: white;
             width: 100%;
-            max-width: 312px; /* Dikecilkan 20% (dari 390px) */
-            margin-bottom: 10px; /* Agar tidak terlalu mepet */
+            max-width: 100%;
+            margin-bottom: 0; /* Agar tidak terlalu mepet */
             box-sizing: border-box;
             border-top-left-radius: 16px;
             border-top-right-radius: 16px;
@@ -971,9 +970,9 @@
         .app-container.mutasi-view #mutasi-screen { display: flex; }
 
         
-        #floating-widget-button { 
-            position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%); 
-            width: 385px; height: 154px; 
+                #floating-widget-button {
+            position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%);
+            width: 95%; max-width: 385px; height: 154px; 
             justify-content: center; align-items: center; 
             z-index: 1001; user-select: none; cursor: pointer; 
             -webkit-tap-highlight-color: transparent; 
