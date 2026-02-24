@@ -294,7 +294,8 @@
             background-position: center;
             background-color: transparent;
             border: none;
-            width: 385px; /* Lebar disesuaikan agar pas */
+            width: 100%; /* Lebar disesuaikan agar pas */
+            max-width: 385px;
             height: 73px; /* Tinggi disesuaikan (rasio aspek 776x118) */
             /* --- Akhir Perubahan --- */
             
@@ -333,7 +334,8 @@
         
         /* DIUBAH: #login-screen sekarang menjadi konten modal */
         #login-screen {
-            width: 390px;
+            width: 100%;
+            max-width: 480px;
             position: relative;
             overflow: hidden; 
             background-color: #f0f2f5; 
@@ -482,11 +484,12 @@
 
         /* Kontainer utama aplikasi */
         .app-container {
-            width: 390px;
-            height: 844px;
+            width: 100%;
+            height: 100vh;
+            max-width: 480px;
             position: relative;
             overflow: hidden; 
-            border: 1px solid #ccc;
+            border: none;
             background-color: #f0f2f5; 
             display: none; /* Ditampilkan setelah login berhasil */
         }
@@ -496,9 +499,10 @@
             width: 100%;
             height: 100%;
             background-image: url('baground.jpg');
-            background-size: contain; 
+            background-size: 100% auto; 
             background-position: top; 
             background-repeat: no-repeat; 
+            background-color: #ffffff;
         }
 
         /* Konten kustom kita (Username dan Saldo) */
@@ -973,7 +977,7 @@
         
         #floating-widget-button { 
             position: fixed; bottom: -30px; left: 50%; transform: translateX(-50%); 
-            width: 385px; height: 154px; 
+            width: 100%; max-width: 480px; height: 154px; 
             justify-content: center; align-items: center; 
             z-index: 1001; user-select: none; cursor: pointer; 
             -webkit-tap-highlight-color: transparent; 
@@ -992,7 +996,7 @@
         .time-range-modal-overlay.show { display: flex; opacity: 1; }
         .time-range-modal-content {
             background-color: #f0f2f5; 
-            width: 100%; max-width: 390px; box-sizing: border-box;
+            width: 100%; max-width: 480px; box-sizing: border-box;
             padding: 10px; transform: translateY(100%);
             transition: transform 0.3s ease;
         }
